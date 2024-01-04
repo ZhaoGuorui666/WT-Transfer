@@ -1,0 +1,269 @@
+<!-- Copyright (c) Microsoft Corporation and Contributors. -->
+<!-- Licensed under the MIT License. -->
+
+<Page
+    x:Class="WT_Transfer.Pages.MusicPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WT_Transfer.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    NavigationCacheMode="Enabled">
+
+    <Grid>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" 
+                            BorderThickness="1" BorderBrush="#f4f4f4" CornerRadius="5"
+                    Grid.Row="0" Background="AliceBlue">
+
+            <AppBarButton x:Name="PullMusic" Label="Sync Folder" Click="PullMusic_Click"
+                          Margin="20,0,0,0">
+                <AppBarButton.Content>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF623;"/>
+                </AppBarButton.Content>
+            </AppBarButton>
+            <AppBarButton x:Name="PushMusic" Label="Add Music to Phone" Click="PushMusic_Click"
+                          Margin="12,0,0,0">
+                <AppBarButton.Content>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEC4F;"/>
+                </AppBarButton.Content>
+            </AppBarButton>
+            
+            <!--<AppBarButton x:Name="DelMusic" Label="Delete" Click="DelMusic_Click"
+                          Margin="12,0,0,0">
+                <AppBarButton.Content>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE74D;"/>
+                </AppBarButton.Content>
+            </AppBarButton>-->
+
+            <InfoBar
+                x:Name="infoBar"
+                Visibility="Collapsed"
+              IsOpen="True"
+    Severity="Informational"
+    Title="Sync process"
+    Message="" />
+        </StackPanel>
+
+        
+        <!--读取不到path的显示信息-->
+        <TextBlock x:Name="NoDataText"
+                   Visibility="Collapsed"
+                   Grid.Row="1"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontSize="24"
+                   TextWrapping="Wrap"
+                   FontWeight="Bold"
+                   >Unable to successfully read data from the phone.</TextBlock>
+        
+        <ScrollViewer  Grid.Row="1" HorizontalAlignment="Center"
+                    VerticalAlignment="Top">
+            <StackPanel Orientation="Vertical">
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="List"  Margin="10,12,12,0" BorderThickness="0"
+                        Width="200" FontSize="20" FontWeight="Bold" Click="ListButton_Click"
+                        x:Name="ListButton"/>
+                    <Button Content="Singer"  Margin="10,12,12,0" BorderThickness="0"
+                        Width="200" FontSize="20" Click="GroupBySinger_Click"
+                        x:Name="SingerButton"/>
+                    <Button Content="Album"  Margin="0,12,12,0" BorderThickness="0"
+                        Width="200" FontSize="20"  Click="GroupByAlbum_Click"
+                        x:Name="AlbumButton"/>
+                </StackPanel>
+                
+                <!--加载-->
+                <StackPanel Grid.Row="1" 
+                    Visibility="Visible"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    x:Name="progressRing"
+                    >
+                    <ProgressRing IsActive="True" 
+                      Height="100" 
+                      Width="100"/>
+                    <TextBlock Text="Loading..." Margin="14,12,0,0"/>
+                </StackPanel>
+
+                <controls:DataGrid x:Name="musicList" Margin="12,0,12,12"
+        AutoGenerateColumns="True"
+                           Grid.Row="1"
+                           VerticalAlignment="Top"
+                           IsReadOnly="True"
+                           RowGroupHeaderPropertyNameAlternative="Singer"
+            Visibility="Collapsed">
+
+                    <controls:DataGrid.Columns>
+                        <controls:DataGridTemplateColumn Header="Select">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox Tag="{Binding fileUrl}">
+                                    </CheckBox>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTextColumn 
+            Header="name" 
+            Width="SizeToCells"
+            Binding="{Binding fileName}" 
+            FontSize="20" />
+                        <controls:DataGridTextColumn 
+            Header="duration" 
+            Width="SizeToCells"
+            Binding="{Binding duration}" 
+            FontSize="20" />
+                        <controls:DataGridTextColumn 
+            Header="album" 
+            Width="SizeToCells"
+            Binding="{Binding album}" 
+            FontSize="20" />
+                        <controls:DataGridTextColumn 
+            Header="singer" 
+            Width="SizeToCells"
+            Binding="{Binding singer}" 
+            FontSize="20" />
+                        <controls:DataGridTextColumn 
+            Header="size" 
+            Width="SizeToCells"
+            Binding="{Binding size}" 
+            FontSize="20" />
+                        <controls:DataGridTextColumn 
+            Header="title" 
+            Width="SizeToCells"
+            Binding="{Binding title}" 
+            FontSize="20" />
+
+                    </controls:DataGrid.Columns>
+                </controls:DataGrid>
+                
+                <controls:DataGrid x:Name="dataGrid" Margin="12,0,12,12"
+                            AutoGenerateColumns="True"
+                           Grid.Row="1"
+                           VerticalAlignment="Top"
+                           IsReadOnly="True"
+                           LoadingRowGroup="dataGrid_LoadingRowGroup"
+                           RowGroupHeaderPropertyNameAlternative="Singer"
+                            Visibility="Collapsed">
+
+                    <controls:DataGrid.Columns>
+                        <controls:DataGridTemplateColumn Header="Select">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox Tag="{Binding fileUrl}">
+                                    </CheckBox>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTextColumn 
+            Header="name" 
+            Width="SizeToCells"
+            Binding="{Binding fileName}" 
+            FontSize="20" />
+                        <controls:DataGridTextColumn 
+            Header="duration" 
+            Width="SizeToCells"
+            Binding="{Binding duration}" 
+            FontSize="20" />
+                        <controls:DataGridTextColumn 
+            Header="album" 
+            Width="SizeToCells"
+            Binding="{Binding album}" 
+            FontSize="20" />
+                        <controls:DataGridTextColumn 
+            Header="singer" 
+            Width="SizeToCells"
+            Binding="{Binding singer}" 
+            FontSize="20" />
+                        <controls:DataGridTextColumn 
+            Header="size" 
+            Width="SizeToCells"
+            Binding="{Binding size}" 
+            FontSize="20" />
+                        <controls:DataGridTextColumn 
+            Header="title" 
+            Width="SizeToCells"
+            Binding="{Binding title}" 
+            FontSize="20" />
+
+                    </controls:DataGrid.Columns>
+                </controls:DataGrid>
+
+                <controls:DataGrid x:Name="dataGrid1" Margin="12,0,12,12"
+        AutoGenerateColumns="True"
+                           Grid.Row="1"
+                           VerticalAlignment="Top"
+                           IsReadOnly="True"
+                           LoadingRowGroup="dataGrid1_LoadingRowGroup"
+                           RowGroupHeaderPropertyNameAlternative="Album"
+                           Visibility="Collapsed">
+
+                    <controls:DataGrid.Columns>
+                        <controls:DataGridTemplateColumn Header="Select">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox Tag="{Binding fileUrl}">
+                                    </CheckBox>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTextColumn 
+                            Header="name" 
+                            Width="SizeToCells"
+                            Binding="{Binding fileName}" 
+                            FontSize="20" />
+                                        <controls:DataGridTextColumn 
+                            Header="duration" 
+                            Width="SizeToCells"
+                            Binding="{Binding duration}" 
+                            FontSize="20" />
+                                        <controls:DataGridTextColumn 
+                            Header="album" 
+                            Width="SizeToCells"
+                            Binding="{Binding album}" 
+                            FontSize="20" />
+                                        <controls:DataGridTextColumn 
+                            Header="singer" 
+                            Width="SizeToCells"
+                            Binding="{Binding singer}" 
+                            FontSize="20" />
+                                        <controls:DataGridTextColumn 
+                            Header="size" 
+                            Width="SizeToCells"
+                            Binding="{Binding size}" 
+                            FontSize="20" />
+                                    <controls:DataGridTextColumn 
+                            Header="title" 
+                            Width="SizeToCells"
+                            Binding="{Binding title}" 
+                            FontSize="20" />
+
+                    </controls:DataGrid.Columns>
+                </controls:DataGrid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <ContentDialog x:Name="permission" Title="No permission" Background="#F0F3F9" PrimaryButtonText="OK">
+            <TextBlock>
+                Please grant corresponding permissions on your phone
+            </TextBlock>
+        </ContentDialog>
+
+        <ContentDialog x:Name="SyncFolder" Title="Sync Info" Background="#F0F3F9" PrimaryButtonText="OK">
+            <TextBlock x:Name="SyncMessage">
+                
+            </TextBlock>
+        </ContentDialog>
+    </Grid>
+    
+</Page>

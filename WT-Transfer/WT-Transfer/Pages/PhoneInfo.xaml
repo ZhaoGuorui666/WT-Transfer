@@ -1,0 +1,46 @@
+<!-- Copyright (c) Microsoft Corporation and Contributors. -->
+<!-- Licensed under the MIT License. -->
+
+<Page
+    x:Class="WT_Transfer.Pages.PhoneInfo"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WT_Transfer.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    NavigationCacheMode="Enabled">
+
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                Orientation="Horizontal">
+        <Image
+            Source="/Images/andrioid.png"
+            Width="200"
+            Height="Auto"
+            >
+        </Image>
+        <StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <TextBlock Margin="0,0,20,0" FontSize="20" Text="Model:" FontWeight="Bold"/>
+                <TextBlock FontSize="20" Text="{x:Bind Model}" HorizontalAlignment="Right"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <TextBlock Margin="0,0,20,0" FontSize="20" Text="Manufacturer:" FontWeight="Bold"/>
+                <TextBlock FontSize="20" Text="{x:Bind Manufacturer}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <TextBlock Margin="0,0,20,0" FontSize="20" Text="Name:" FontWeight="Bold"/>
+                <TextBlock FontSize="20" Text="{x:Bind PhoneName}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <TextBlock Margin="0,0,20,0" FontSize="20" Text="Release:" FontWeight="Bold"/>
+                <TextBlock FontSize="20" Text="{x:Bind Release}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <TextBlock Margin="0,0,20,0" FontSize="20" Text="Resolution:" FontWeight="Bold"/>
+                <TextBlock FontSize="20" Text="{x:Bind Resolution}"/>
+            </StackPanel>
+        </StackPanel>
+    </StackPanel>
+</Page>

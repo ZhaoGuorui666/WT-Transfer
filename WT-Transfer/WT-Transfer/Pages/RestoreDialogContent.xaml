@@ -1,0 +1,35 @@
+<!-- Copyright (c) Microsoft Corporation and Contributors. -->
+<!-- Licensed under the MIT License. -->
+
+<Page
+    x:Class="WT_Transfer.Pages.RestoreDialogContent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WT_Transfer.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.Resources>
+        <Style TargetType="TextBlock" x:Key="CustomTextBlockStyle">
+            <Setter Property="FontFamily" Value="Comic Sans MS"/>
+            <Setter Property="FontStyle" Value="Italic"/>
+        </Style>
+    </Page.Resources>
+
+
+    <StackPanel>
+        <CheckBox 
+            x:Name="Incre_restore"
+            Content="Incremental Restore: Restore only files that do not exist on the phone."
+          Checked="Incre_Checked"
+          Unchecked="Incre_Unchecked" />
+
+        <CheckBox 
+            x:Name="Overwrite_restore"
+            Content="Overwrite Restore: Restore phone content to the state before coverage."
+          Checked="Overwrite_Checked"
+          Unchecked="Overwrite_Unchecked" />
+    </StackPanel>
+</Page>

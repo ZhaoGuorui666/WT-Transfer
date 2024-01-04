@@ -1,0 +1,138 @@
+<!-- Copyright (c) Microsoft Corporation and Contributors. -->
+<!-- Licensed under the MIT License. -->
+
+<Window
+    x:Class="WT_Transfer.USBDebuggWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WT_Transfer"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid>
+        <ScrollViewer>
+            <StackPanel Orientation="Vertical" Margin="18,18,18,18">
+                <TextBlock FontSize="40" FontWeight="Bold">
+                Mobile phone opening Debug menu tutorial:
+                </TextBlock>
+
+                <!--Online Tutorial:-->
+                <StackPanel>
+                    <TextBlock FontSize="30" FontWeight="Bold">
+                    Online Tutorial:
+                    </TextBlock>
+                    <HyperlinkButton Content="How to turn on the USB Debug menu of the mobile phone ?" 
+                         NavigateUri="https://www.wideanglesoftware.com/support/droidtransfer/how-to-connect-your-android-phone-with-a-usb-cable.php" 
+                             Margin="0,0,0,10"
+                             />
+                </StackPanel>
+
+                <StackPanel>
+                    <TextBlock FontSize="30" FontWeight="Bold">
+                    Various mobile phone tutorials:
+                    </TextBlock>
+                    <StackPanel>
+                        <TextBlock FontSize="25" FontWeight="Bold">
+                        Samsung:
+                        </TextBlock>
+                        <StackPanel>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            1.  Enter the phone settings menu: Open your Samsung phone, drop down the status bar, 
+                            and then click on the settings icon (gear shaped icon).
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,6,0,0">
+                            2. Enter Developer Options: In the Settings menu, scroll down and find Developer Options. 
+                            If you cannot directly find this option, please first go to About Phone (located at the 
+                            bottom of the settings menu or other location), 
+                            and then click on the version number seven times to activate the developer option.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,6,0,0">
+                            3. Enable USB Debug menu: In the developer options, find the USB debugging or Android debugging 
+                            options and turn them on (it is a sliding switch).
+                            </TextBlock>
+                        </StackPanel>
+
+                        <TextBlock FontSize="25" FontWeight="Bold" Margin="0,12,0,0">
+                        Vivo:
+                        </TextBlock>
+                        <StackPanel>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            1.   Enter the 'Settings' menu. Firstly, find the 'Settings' application on the vivo phone's main screen and click to enter it. In the "Settings" interface, users can see many tabs, including "General", "Network and Internet", "Battery", "Applications and Notifications", and so on.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            2. Enter the 'Developer Options' tab. In the "Settings" interface, the user needs to slide the screen down, find the last tab "About Phone", and then click to enter that tab. In the "About Phone" interface, you need to click on the "Version Number" 7 times in a row to enable the "Developer Options".
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            3. Enable USB debugging mode. After enabling 'Developer Options', users need to return to the' Settings' interface, where they will see a new tab called 'Developer Options'. Enter the "Developer Options" interface, scroll down the interface, find the "USB Debugging" option, and turn on the switch to enable the USB Debug menu.
+                            </TextBlock>
+                        </StackPanel>
+
+                        <TextBlock FontSize="25" FontWeight="Bold" Margin="0,12,0,0">
+                        oppo:
+                        </TextBlock>
+                        <StackPanel>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            1.   Open the phone settings application. Find the 'Settings' application on the phone's main screen and click to enter.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            2. Enter developer options. Scroll to the bottom in the settings interface, find the "About Phone" option, and click to enter. In the interface about mobile phones, you need to continuously click on the "version number" multiple times to unlock the developer option. After each click, it will display how many remaining clicks are available.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            3. Open developer options. After successfully unlocking the developer options, return to the settings interface and find the newly appeared "Developer Options" option to enter it.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            4. Enable USB Debug menu .In the developer options, find "USB Debugging" and swipe it on to complete the settings.
+                            </TextBlock>
+                        </StackPanel>
+
+                        <TextBlock FontSize="25" FontWeight="Bold" Margin="0,12,0,0">
+                        Huawei:
+                        </TextBlock>
+                        <StackPanel>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            1. Click on 'About Phone'. Open Huawei Phone Settings, slide down the screen and click on 'About Phone'.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            2. Enable developer mode. Click on the version number multiple times and enter the password on the pop-up page to activate developer mode.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            3. Click on System and Update. Return to the settings page and click on System and Update.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            4. Click on the developer option. Click on the developer option on the system and update pages.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            5. Enable debugging. Click the button behind USB debugging to start debugging.
+                            </TextBlock>
+                        </StackPanel>
+
+                        <TextBlock FontSize="25" FontWeight="Bold" Margin="0,12,0,0">
+                        Xiaomi:
+                        </TextBlock>
+                        <StackPanel>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            1.   First, find the "Settings" program of List of Xiaomi products and click to enter.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            2. Then click to enter the "My Device" option page.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            3. Click again to enter the "All Parameters" option page.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            4. Next, continuously click on the "MIUI version number" until the phone screen prompts that the phone has entered developer mode.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            5. After entering mobile developer mode, click to enter the "More Settings" option on the "Settings" homepage.
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="18" Margin="0,10,0,0">
+                            6. Then click to enter 'Developer Options'. Finally, after turning on the "USB debugging" option, the phone will turn on the USB Debug menu.
+                            </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>

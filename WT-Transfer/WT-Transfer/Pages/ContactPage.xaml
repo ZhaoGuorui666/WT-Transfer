@@ -1,0 +1,352 @@
+<Page
+    x:Class="WT_Transfer.Pages.ContactPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WT_Transfer.Pages"
+    xmlns:Model="using:WT_Transfer.Models"
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    NavigationCacheMode="Enabled">
+
+    <Grid>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!--按钮栏-->
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" 
+                            BorderThickness="1" BorderBrush="#f4f4f4" CornerRadius="5"
+                    Grid.Row="0"  Background="AliceBlue">
+            <!--<AutoSuggestBox TextChanged="AutoSuggestBox_TextChanged"
+                SuggestionChosen="AutoSuggestBox_SuggestionChosen"
+                Width="300"
+                Height="40"
+                QueryIcon="Find"
+                PlaceholderText="Type a name to query"/>-->
+
+
+            <AppBarButton x:Name="Add" Label="Add" Click="AddContact_Click"
+                          Margin="12,0,0,0">
+                <AppBarButton.Content>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8FA;"/>
+                </AppBarButton.Content>
+            </AppBarButton>
+            <AppBarButton x:Name="Del" Label="Delete Selection" Click="DelContact_Click">
+                <AppBarButton.Content>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE74D;"/>
+                </AppBarButton.Content>
+            </AppBarButton>
+            <AppBarButton x:Name="ModifyContact" Label="Modify Selection" Click="ModifyContact_Click">
+                <AppBarButton.Content>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEF58;"/>
+                </AppBarButton.Content>
+            </AppBarButton>
+            
+            <AppBarSeparator Margin="12,0,12,0"></AppBarSeparator>
+
+            
+            <AppBarButton x:Name="CopyToPC" Label="Save as" Click="export_Click">
+                <AppBarButton.Content>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEE71;"/>
+                </AppBarButton.Content>
+            </AppBarButton>
+            
+            
+            
+            <AppBarSeparator Margin="12,0,12,0"></AppBarSeparator>
+            
+            <AppBarButton x:Name="BackUp" Label="BackUp" Click="BackUp_Click">
+                <AppBarButton.Content>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF7ED;"/>
+                </AppBarButton.Content>
+            </AppBarButton>
+
+
+            <AppBarButton x:Name="Restore" Label="Restore" Click="Restore_Click">
+                <AppBarButton.Content>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE777;"/>
+                </AppBarButton.Content>
+            </AppBarButton>
+        </StackPanel>
+
+        <!--加载画面-->
+        <StackPanel Grid.Row="1"
+            Visibility="Visible"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            x:Name="progressRing"
+            >
+            <ProgressRing IsActive="True"
+            Height="100"
+            Width="100"/>
+            <TextBlock Text="Loading..." Margin="14,12,0,0"/>
+        </StackPanel>
+
+        <!--读取不到数据，显示的内容-->
+        <TextBlock x:Name="NoDataText"
+                   Visibility="Collapsed"
+                   Grid.Row="1"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontSize="24"
+                   TextWrapping="Wrap"
+                   FontWeight="Bold"
+                   >Unable to successfully read data from the phone.</TextBlock>
+        
+        <!--联系人列表-->
+        <controls:ListDetailsView BackButtonBehavior="Automatic"
+                                    ItemsSource="{x:Bind Contacts}"
+                                    NoSelectionContent="Select an item to view"
+                                    CompactModeThresholdWidth="720"
+                                  Grid.Row="1"
+                                  x:Name="ContactList"
+                                  Visibility="Collapsed">
+            <controls:ListDetailsView.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Margin="0,8">
+                        <TextBlock Text="{Binding structuredName[0]}"
+                                   Style="{StaticResource SubtitleTextBlockStyle}"/>
+                    </StackPanel>
+                </DataTemplate>
+            </controls:ListDetailsView.ItemTemplate>
+            <controls:ListDetailsView.DetailsTemplate>
+                <DataTemplate>
+                    <RelativePanel Margin="24">
+                        <controls:ImageEx x:Name="FromEllipse"
+                                               Width="50"
+                                               Height="50"
+                                               CornerRadius="999"/>
+                        <StackPanel Orientation="Vertical">
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock Text="PhoneNumbers"></TextBlock>
+                                <ListView ItemsSource="{Binding phoneNumbers}">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="Model:KeyValuePairModel">
+                                            <ListView ItemsSource="{x:Bind Value}">
+                                                <ListView.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}"></TextBlock>
+                                                    </DataTemplate>
+                                                </ListView.ItemTemplate>
+                                            </ListView>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </StackPanel>
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock Text="Emails"></TextBlock>
+                                <ListView ItemsSource="{Binding emails}">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="Model:KeyValuePairModel">
+                                            <ListView ItemsSource="{x:Bind Value}">
+                                                <ListView.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}"></TextBlock>
+                                                    </DataTemplate>
+                                                </ListView.ItemTemplate>
+                                            </ListView>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </StackPanel>
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock Text="Address"></TextBlock>
+                                <ListView ItemsSource="{Binding addresses}">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="Model:KeyValuePairModel">
+                                            <ListView ItemsSource="{x:Bind Value}">
+                                                <ListView.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}"></TextBlock>
+                                                    </DataTemplate>
+                                                </ListView.ItemTemplate>
+                                            </ListView>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </StackPanel>
+                        </StackPanel>
+                    </RelativePanel>
+                </DataTemplate>
+            </controls:ListDetailsView.DetailsTemplate>
+            <controls:ListDetailsView.NoSelectionContentTemplate>
+                <DataTemplate>
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                        
+                        <TextBlock Text="{Binding}"
+                                   FontSize="24"
+                                   Margin="0,12"/>
+                    </StackPanel>
+                </DataTemplate>
+            </controls:ListDetailsView.NoSelectionContentTemplate>
+        </controls:ListDetailsView>
+
+        <!--添加联系人-->
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                    Grid.Row="1"
+                      x:Name="AddContactPage"
+                      Visibility="Collapsed">
+            <StackPanel Orientation="Vertical"
+                    Padding="20">
+
+                <TextBlock Text="DisplayName" FontSize="24" FontWeight="Bold" />
+                <TextBox AutomationProperties.Name="simple TextBox" 
+                             x:Name="DisplayName"
+                         PlaceholderText="DisplayName"
+                         HorizontalAlignment="Left"
+                         Width="500"/>
+
+                <TextBlock x:Name="TitleTextBlock" Text="Telephone" FontSize="24" FontWeight="Bold" />
+                <StackPanel Orientation="Horizontal">
+                    <ComboBox  x:Name="TelephoneType" SelectedIndex="2">
+                        <x:String>Custom</x:String>
+                        <x:String>Home</x:String>
+                        <x:String>Mobile</x:String>
+                        <x:String>Work</x:String>
+                        <x:String>WorkFax</x:String>
+                        <x:String>HomeFax</x:String>
+                        <x:String>Pager</x:String>
+                        <x:String>Other</x:String>
+                        <x:String>Callback</x:String>
+                    </ComboBox>
+                    <TextBox AutomationProperties.Name="simple TextBox" 
+                             x:Name="TelephoneText"
+                         PlaceholderText="Phone Number"
+                         Width="500"
+                             TextChanged="TelephoneText_TextChanged"/>
+                </StackPanel>
+
+                <TextBlock x:Name="Email" Text="Email" FontSize="24" FontWeight="Bold" />
+                <StackPanel Orientation="Horizontal">
+                    <ComboBox SelectedIndex="2"
+                               x:Name="EmailType">
+                        <x:String>Custom</x:String>
+                        <x:String>Home</x:String>
+                        <x:String>Work</x:String>
+                        <x:String>Other</x:String>
+                        <x:String>Mobile</x:String>
+                    </ComboBox>
+                    <TextBox  x:Name="EmailText"
+                              AutomationProperties.Name="simple TextBox" 
+                         PlaceholderText="E-Mail Address"
+                         Width="500"/>
+                </StackPanel>
+
+
+
+                <TextBlock x:Name="Address" Text="Address" FontSize="24" FontWeight="Bold" />
+                <StackPanel Orientation="Horizontal">
+                    <ComboBox SelectedIndex="2"
+                              x:Name="AddressType">
+                        <x:String>Custom</x:String>
+                        <x:String>Home</x:String>
+                        <x:String>Work</x:String>
+                        <x:String>Other</x:String>
+                    </ComboBox>
+                    <TextBox  x:Name="AddressText"
+                              AutomationProperties.Name="simple TextBox" 
+                         PlaceholderText="Address"
+                         Width="500"/>
+                </StackPanel>
+
+
+                <TextBlock  Text="Note" FontSize="24" FontWeight="Bold" />
+                <TextBox AutomationProperties.Name="simple TextBox" 
+                         x:Name="Note"
+                         PlaceholderText="Company"
+                     HorizontalAlignment="Left"
+                         Width="500"/>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                    <Button Style="{StaticResource AccentButtonStyle}" Content="Add Contact" 
+                            Click="Button_Click"
+                            Margin="0,0,10,0"></Button>
+                    <Button Style="{StaticResource AccentButtonStyle}" Content="Cancel"
+                            Click="Button_Click_1"></Button>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!--修改联系人-->
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                    Grid.Row="1"
+                      x:Name="ModifyContactPage"
+                      Visibility="Collapsed">
+            <StackPanel Orientation="Vertical"
+                    Padding="20">
+
+                <TextBlock Text="DisplayName" FontSize="24" FontWeight="Bold" />
+                <TextBox AutomationProperties.Name="simple TextBox" 
+                             x:Name="DisplayName1"
+                         PlaceholderText="DisplayName"
+                         HorizontalAlignment="Left"
+                         Width="500"/>
+
+                <TextBlock x:Name="TitleTextBlock1" Text="Telephone" FontSize="24" FontWeight="Bold" />
+                <StackPanel x:Name="PhoneNumsPanel"
+                            Orientation="Vertical">
+                </StackPanel>
+
+                <TextBlock x:Name="Email1" Text="Email" FontSize="24" FontWeight="Bold" />
+                <StackPanel Orientation="Horizontal"
+                            x:Name="EmailPanel">
+                </StackPanel>
+
+
+
+                <TextBlock x:Name="Address1" Text="Address" FontSize="24" FontWeight="Bold" />
+                <StackPanel Orientation="Horizontal"
+                            x:Name="AddressPanel">
+                </StackPanel>
+
+
+                <TextBlock  Text="Note" FontSize="24" FontWeight="Bold" />
+                <TextBox AutomationProperties.Name="simple TextBox" 
+                         x:Name="Note1"
+                         PlaceholderText="Company"
+                     HorizontalAlignment="Left"
+                         Width="500"/>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                    <Button Style="{StaticResource AccentButtonStyle}" Content="Modify Contact" 
+                            Click="Button_Click_2"
+                            Margin="0,0,10,0"></Button>
+                    <Button Style="{StaticResource AccentButtonStyle}" Content="Cancel"
+                            Click="Button_Click_1"></Button>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+        
+        <!--权限弹窗-->
+        <ContentDialog x:Name="permission" Title="No permission" Background="#F0F3F9" PrimaryButtonText="OK">
+            <TextBlock>
+                Please grant corresponding permissions on your phone
+            </TextBlock>
+        </ContentDialog>
+
+        <!--同步弹窗-->
+        <ContentDialog x:Name="SyncDialog" Title="Sync Info" Background="#F0F3F9" PrimaryButtonText="OK">
+            <TextBlock x:Name="SyncMessage">
+
+            </TextBlock>
+        </ContentDialog>
+
+        
+        <ContentDialog x:Name="ContactRestore" Title="Contact Restore" Background="#F0F3F9" PrimaryButtonText="OK">
+
+            <StackPanel>
+                <ProgressRing IsActive="True" />
+                <TextBlock x:Name="RestoreText" TextWrapping="Wrap" HorizontalAlignment="Center">
+                Restoring, please wait.
+                </TextBlock>
+            </StackPanel>
+
+        </ContentDialog>
+    </Grid>
+</Page>

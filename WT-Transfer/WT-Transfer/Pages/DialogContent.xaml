@@ -1,0 +1,37 @@
+<!-- Copyright (c) Microsoft Corporation and Contributors. -->
+<!-- Licensed under the MIT License. -->
+
+<Page
+    x:Class="WT_Transfer.Pages.DialogContent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WT_Transfer.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.Resources>
+        <Style TargetType="TextBlock" x:Key="CustomTextBlockStyle">
+            <Setter Property="FontFamily" Value="Comic Sans MS"/>
+            <Setter Property="FontStyle" Value="Italic"/>
+        </Style>
+    </Page.Resources>
+
+            
+    <StackPanel>
+        <TextBox x:Name="FilePathTextBox" Text="{Binding SelectedFilePath}"/>
+        <Button x:Name="SelectButton" Content="Select the directory to backup" Click="ChoosePathButton_Click"/>
+
+        <!--<TextBox Header="Enter the frequency of backups:" PlaceholderText="Hours" 
+                 Text="0" x:Name="backUpHour" 
+                 TextChanged="backUpHour_TextChanged"/>
+        <TextBox PlaceholderText="Minutes" 
+                 Text="0" x:Name="backUpMinute" 
+                 TextChanged="backUpMinute_TextChanged"
+/>
+        
+        <TextBlock Text="Please choose the directory carefully and cannot change it after selection." Style="{StaticResource CustomTextBlockStyle}"
+                   Foreground="Red" Margin="0,20,0,0"/>-->
+    </StackPanel>
+</Page>

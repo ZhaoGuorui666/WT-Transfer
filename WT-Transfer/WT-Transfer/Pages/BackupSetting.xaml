@@ -1,0 +1,163 @@
+<!-- Copyright (c) Microsoft Corporation and Contributors. -->
+<!-- Licensed under the MIT License. -->
+
+<Page
+    x:Class="WT_Transfer.Pages.BackupSetting"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WT_Transfer.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    NavigationCacheMode="Enabled">
+
+    <ScrollViewer
+            x:Name="contentSV"
+            Grid.Row="1"
+            Padding="56,0,0,0"
+            IsTabStop="False"
+            UseSystemFocusVisuals="False"
+            VerticalScrollBarVisibility="Auto"
+            VerticalScrollMode="Auto">
+        <StackPanel Orientation="Vertical" HorizontalAlignment="Left">
+
+            <TextBlock
+                    Style="{StaticResource SubtitleTextBlockStyle}"
+                    Margin="0,60,0,12"
+                    Text="One click backup" />
+            <StackPanel Orientation="Vertical">
+                <StackPanel Orientation="Horizontal">
+                    <CheckBox x:Name="RootDir" Content="Root directory" Margin="0,0,0,0" IsEnabled="False"/>
+                    <TextBox x:Name="RootDirBackUpPath" Margin="80,0,0,0" VerticalAlignment="Center" Width="200"/>
+                    <Button Content="Choose Path"
+                    Style="{StaticResource AccentButtonStyle}"  VerticalAlignment="Center"
+                        Margin="12,0,0,0" Click="Button_Click_12"/>
+                    <Button Content="Open Folder" Margin="10,0,0,0" 
+                    Style="{StaticResource AccentButtonStyle}" Click="Button_Click_11"/>
+                </StackPanel>
+                
+                <StackPanel Orientation="Horizontal">
+                    <CheckBox x:Name="FileCheck" Content="File" Margin="0,0,0,0"
+                          Checked="FileCheck_Checked" Unchecked="FileCheck_Unchecked"/>
+                    <TextBox x:Name="FileBackUpPath" Margin="80,0,0,0" VerticalAlignment="Center" Width="200"/>
+                    <Button Content="Choose Path"
+                    Style="{StaticResource AccentButtonStyle}"  VerticalAlignment="Center"
+                        Margin="12,0,0,0"
+                            Click="Button_Click_6"/>
+                    <Button Content="Open Folder" Margin="10,0,0,0" 
+                    Style="{StaticResource AccentButtonStyle}" Click="Button_Click_1"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal">
+
+                    <CheckBox x:Name="ContactCheck" Content="Contact" Margin="0,0,0,0" 
+                          Checked="ContactCheck_Checked" Unchecked="ContactCheck_Unchecked"/>
+                    <TextBox x:Name="ContactBackUpPath" Margin="80,0,0,0" VerticalAlignment="Center" Width="200"/>
+                    <Button Content="Choose Path"
+                    Style="{StaticResource AccentButtonStyle}"  VerticalAlignment="Center"
+                        Margin="12,0,0,0"
+                            Click="Button_Click_7"/>
+                    <Button Content="Open Folder" Margin="10,0,0,0" 
+                    Style="{StaticResource AccentButtonStyle}" Click="Button_Click_2"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal">
+
+                    <CheckBox x:Name="MusicCheck" Content="Music" Margin="0,0,0,0"
+                          Checked="MusicCheck_Checked" Unchecked="MusicCheck_Unchecked"/>
+                    <TextBox x:Name="MusicBackUpPath" Margin="80,0,0,0" VerticalAlignment="Center" Width="200"/>
+                    <Button Content="Choose Path"
+                    Style="{StaticResource AccentButtonStyle}"  VerticalAlignment="Center"
+                        Margin="12,0,0,0"
+                            Click="Button_Click_8"/>
+                    <Button Content="Open Folder" Margin="10,0,0,0" 
+                    Style="{StaticResource AccentButtonStyle}" Click="Button_Click_3"/>
+                </StackPanel>
+
+
+                <StackPanel Orientation="Horizontal">
+                    <CheckBox x:Name="SmsCheck" Content="Sms" Margin="0,0,0,0"
+                          Checked="SmsCheck_Checked" Unchecked="SmsCheck_Unchecked"/>
+                    <TextBox x:Name="SmsBackUpPath" Margin="80,0,0,0" VerticalAlignment="Center" Width="200"/>
+                    <Button Content="Choose Path"
+                    Style="{StaticResource AccentButtonStyle}"  VerticalAlignment="Center"
+                        Margin="12,0,0,0"
+                            Click="Button_Click_10"/>
+                    <Button Content="Open Folder" Margin="10,0,0,0" 
+                    Style="{StaticResource AccentButtonStyle}" Click="Button_Click_5"/>
+                </StackPanel>
+                
+                <StackPanel Orientation="Horizontal">
+                    <CheckBox x:Name="PhotoCheck" Content="Photo" Margin="0,0,0,0"  
+                         Checked="PhotoCheck_Checked" Unchecked="PhotoCheck_Unchecked" />
+                    <TextBox x:Name="PhotoBackUpPath" Margin="80,0,0,0" VerticalAlignment="Center" Width="200"/>
+                    <Button Content="Choose Path"
+                    Style="{StaticResource AccentButtonStyle}"  VerticalAlignment="Center"
+                        Margin="12,0,0,0"
+                            Click="Button_Click_9"/>
+                    <Button Content="Open Folder" Margin="10,0,0,0" 
+                    Style="{StaticResource AccentButtonStyle}" Click="Button_Click_4"/>
+                </StackPanel>
+                
+                
+                
+            </StackPanel>
+            <Button Content="Click button to back up the selected content" Margin="0,12,0,0" 
+                    Style="{StaticResource AccentButtonStyle}"
+                    Click="Button_Click"
+                    />
+
+            <InfoBar
+                x:Name="fileInfoBar"
+                Visibility="Collapsed"
+              IsOpen="True"
+                Severity="Informational"
+                Title="Backup process"
+                Message="" 
+                Margin="0,12,0,0"/>
+
+            <InfoBar
+                x:Name="contactInfoBar"
+                Visibility="Collapsed"
+              IsOpen="True"
+                Severity="Informational"
+                Title="Backup process"
+                Message="" 
+                Margin="0,12,0,0"/>
+
+            <InfoBar
+                x:Name="musicInfoBar"
+                Visibility="Collapsed"
+              IsOpen="True"
+                Severity="Informational"
+                Title="Backup process"
+                Message="" 
+                Margin="0,12,0,0"/>
+
+
+            <InfoBar
+                x:Name="smsInfoBar"
+                Visibility="Collapsed"
+              IsOpen="True"
+                Severity="Informational"
+                Title="Backup process"
+                Message="" 
+                Margin="0,12,0,0"/>
+
+            <InfoBar
+                x:Name="photoInfoBar"
+                Visibility="Collapsed"
+              IsOpen="True"
+                Severity="Informational"
+                Title="Backup process"
+                Message="" 
+                Margin="0,12,0,0"/>
+            <ContentDialog x:Name="permission" Title="No permission" Background="#F0F3F9" PrimaryButtonText="OK">
+                <TextBlock>
+                Please grant corresponding permissions on your phone
+                </TextBlock>
+            </ContentDialog>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

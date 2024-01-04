@@ -1,0 +1,167 @@
+<!-- Copyright (c) Microsoft Corporation and Contributors. -->
+<!-- Licensed under the MIT License. -->
+
+<Page
+    x:Class="WT_Transfer.Dialog.ContactRestoreDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WT_Transfer.Dialog"
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    xmlns:Model="using:WT_Transfer.Models"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock FontSize="40"
+                   Grid.Row="0"
+                   Margin="0,15"
+                   HorizontalAlignment="Center"
+                   >Content to be restored</TextBlock>
+
+        <!--加载画面-->
+        <StackPanel Grid.Row="1"
+            Visibility="Visible"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            x:Name="progressRing"
+            >
+            <ProgressRing IsActive="True"
+            Height="100"
+            Width="100"/>
+            <TextBlock Text="Loading..." Margin="14,12,0,0"/>
+        </StackPanel>
+
+
+        <!--联系人列表-->
+        <controls:ListDetailsView BackButtonBehavior="Automatic"
+                                    ItemsSource="{x:Bind Contacts}"
+                                    NoSelectionContent="Select an item to view"
+                                    CompactModeThresholdWidth="720"
+                                  Grid.Row="1"
+                                  x:Name="ContactList"
+                                  Visibility="Collapsed">
+            <controls:ListDetailsView.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Margin="0,8">
+                        <TextBlock Text="{Binding structuredName[0]}"
+                                   Style="{StaticResource SubtitleTextBlockStyle}"/>
+                    </StackPanel>
+                </DataTemplate>
+            </controls:ListDetailsView.ItemTemplate>
+            <controls:ListDetailsView.DetailsTemplate>
+                <DataTemplate>
+                    <RelativePanel Margin="24">
+                        <controls:ImageEx x:Name="FromEllipse"
+                                               Width="50"
+                                               Height="50"
+                                               CornerRadius="999"/>
+                        <StackPanel Orientation="Vertical">
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock Text="PhoneNumbers"></TextBlock>
+                                <ListView ItemsSource="{Binding phoneNumbers}">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="Model:KeyValuePairModel">
+                                            <ListView ItemsSource="{x:Bind Value}">
+                                                <ListView.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}"></TextBlock>
+                                                    </DataTemplate>
+                                                </ListView.ItemTemplate>
+                                            </ListView>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </StackPanel>
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock Text="Emails"></TextBlock>
+                                <ListView ItemsSource="{Binding emails}">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="Model:KeyValuePairModel">
+                                            <ListView ItemsSource="{x:Bind Value}">
+                                                <ListView.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}"></TextBlock>
+                                                    </DataTemplate>
+                                                </ListView.ItemTemplate>
+                                            </ListView>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </StackPanel>
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock Text="Address"></TextBlock>
+                                <ListView ItemsSource="{Binding addresses}">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="Model:KeyValuePairModel">
+                                            <ListView ItemsSource="{x:Bind Value}">
+                                                <ListView.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}"></TextBlock>
+                                                    </DataTemplate>
+                                                </ListView.ItemTemplate>
+                                            </ListView>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </StackPanel>
+                        </StackPanel>
+                    </RelativePanel>
+                </DataTemplate>
+            </controls:ListDetailsView.DetailsTemplate>
+            <controls:ListDetailsView.NoSelectionContentTemplate>
+                <DataTemplate>
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                        
+                        <TextBlock Text="{Binding}"
+                                   FontSize="24"
+                                   Margin="0,12"/>
+                    </StackPanel>
+                </DataTemplate>
+            </controls:ListDetailsView.NoSelectionContentTemplate>
+        </controls:ListDetailsView>
+
+        <!--<StackPanel Orientation="Horizontal" Grid.Row="2"
+                    HorizontalAlignment="Center"
+                    Margin="0,15"
+                    >
+
+            <Button Style="{StaticResource AccentButtonStyle}"
+                    FontSize="30"
+                    Margin="0,0,20,0"
+                    Click="Button_Click"
+                    >Confirm Restore</Button>
+
+            <Button Style="{StaticResource AccentButtonStyle}"
+                    FontSize="30"
+                    Click="Button_Click_1"
+                    >Cancel</Button>
+        </StackPanel>-->
+
+        <!--同步弹窗-->
+        <ContentDialog x:Name="SyncDialog" Title="Sync Info" Background="#F0F3F9" PrimaryButtonText="OK">
+            <TextBlock x:Name="SyncMessage">
+
+            </TextBlock>
+        </ContentDialog>
+
+        <ContentDialog x:Name="_ContactDialog" Title="Contact Restore" Background="#F0F3F9" PrimaryButtonText="OK">
+
+            <StackPanel>
+                <ProgressRing IsActive="True" />
+                <TextBlock x:Name="RestoreText" TextWrapping="Wrap" HorizontalAlignment="Center">
+                Restoring, please wait.
+                </TextBlock>
+            </StackPanel>
+
+        </ContentDialog>
+    </Grid>
+</Page>

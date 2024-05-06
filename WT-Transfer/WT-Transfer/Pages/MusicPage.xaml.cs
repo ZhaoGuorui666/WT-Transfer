@@ -2,6 +2,8 @@
 // Licensed under the MIT License.
 
 using AdvancedSharpAdbClient;
+using CommunityToolkit.WinUI.UI.Controls;
+using CommunityToolkit.WinUI.UI;
 using MathNet.Numerics.RootFinding;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
@@ -19,6 +21,7 @@ using Org.BouncyCastle.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -37,6 +40,7 @@ using WT_Transfer.Helper;
 using WT_Transfer.Models;
 using WT_Transfer.SocketModels;
 using Path = System.IO.Path;
+using static WT_Transfer.SocketModels.Request;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -48,7 +52,8 @@ namespace WT_Transfer.Pages
     /// </summary>
     public sealed partial class MusicPage : Page
     {
-        public List<MusicInfo> Musics { get; set; }
+        public ObservableCollection<MusicInfo> Musics { get; set; } = new ObservableCollection<MusicInfo>();
+
         ObservableCollection<GroupInfoCollection<MusicInfo>> MusicsByCreater
             = new ObservableCollection<GroupInfoCollection<MusicInfo>>();
         ObservableCollection<GroupInfoCollection<MusicInfo>> MusicsByAlbum
@@ -63,20 +68,28 @@ namespace WT_Transfer.Pages
         AdbHelper adbHelper = new AdbHelper(); 
         CheckUsbHelper checkUsbHelper = new CheckUsbHelper();
 
+        private List<Button> buttons = new List<Button>();
+
         public MusicPage()
         {
             this.InitializeComponent();
 
             this.Loaded += LoadingPage_Loaded;
+
+            buttons.Add(ListButton);
+            buttons.Add(SingerButton);
+            buttons.Add(AlbumButton);
         }
 
         private async void LoadingPage_Loaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (this.Musics == null)
+                ListButton_Click(ListButton, new RoutedEventArgs()); // 模拟点击 ListButton
+
+                if (this.Musics == null || this.Musics.Count == 0)
                 {
-                    if (MainWindow.Musics == null)
+                    if (MainWindow.Musics == null || MainWindow.Musics.Count == 0)
                     {
                         // 进行初始化操作，例如解析数据并赋值给 calls
                         if (!MainWindow.music_isRuning)
@@ -101,6 +114,9 @@ namespace WT_Transfer.Pages
                         InitPage();
                     }
                 }
+
+                // 在加载逻辑之后初始化选中文件信息
+                InitializeSelectedFilesInfo();
             }
             catch (Exception ex)
             {
@@ -120,6 +136,8 @@ namespace WT_Transfer.Pages
             this.MusicsByAlbum = MainWindow.MusicsByAlbum;
             this.MusicsByCreater = MainWindow.MusicsByCreater;
 
+            
+
             progressRing.Visibility = Visibility.Collapsed;
             dataGrid.Visibility = Visibility.Collapsed;
             musicList.ItemsSource = Musics;
@@ -134,8 +152,11 @@ namespace WT_Transfer.Pages
 
                 if (MainWindow.Permissions[4]=='0')
                 {
-                    permission.XamlRoot = this.XamlRoot;
-                    permission.ShowAsync();
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        permission.XamlRoot = this.XamlRoot;
+                        permission.ShowAsync();
+                    });
 
                     MainWindow.Permissions[4] = '1';
                 }
@@ -171,8 +192,7 @@ namespace WT_Transfer.Pages
                             //string musicInfo = File.ReadAllText(path);
                             List<MusicInfo> list = JsonConvert.DeserializeObject<List<MusicInfo>>(musicInfo);
 
-
-                            Musics = new List<MusicInfo>(list);
+                            Musics = new ObservableCollection<MusicInfo>(list);
 
                             //Implement grouping through LINQ queries
                             var query = from item in list
@@ -182,6 +202,13 @@ namespace WT_Transfer.Pages
                                          group item by item.album into g
                                          select new { GroupName = g.Key, Items = g };
 
+                            // 在添加新项之前先清空这些集合
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
+                                MusicsByCreater.Clear();
+                                MusicsByAlbum.Clear();
+                            });
+
                             foreach (var g in query)
                             {
                                 GroupInfoCollection<MusicInfo> info = new GroupInfoCollection<MusicInfo>();
@@ -190,7 +217,10 @@ namespace WT_Transfer.Pages
                                 {
                                     info.Add(item);
                                 }
-                                MusicsByCreater.Add(info);
+                                DispatcherQueue.TryEnqueue(() =>
+                                {
+                                    MusicsByCreater.Add(info);
+                                });
                             }
                             foreach (var g in query2)
                             {
@@ -200,7 +230,10 @@ namespace WT_Transfer.Pages
                                 {
                                     info.Add(item);
                                 }
-                                MusicsByAlbum.Add(info);
+                                DispatcherQueue.TryEnqueue(() =>
+                                {
+                                    MusicsByAlbum.Add(info);
+                                });
                             }
 
                             DispatcherQueue.TryEnqueue(() =>
@@ -227,8 +260,11 @@ namespace WT_Transfer.Pages
                     }
                     else
                     {
-                        // 不成功
-                        show_error("Music query failed ,please check the phone connection.");
+                        DispatcherQueue.TryEnqueue(() =>
+                        {
+                            // 不成功
+                            show_error("Music query failed ,please check the phone connection.");
+                        });
                     }
                 });
 
@@ -327,17 +363,40 @@ namespace WT_Transfer.Pages
                     string res = adbHelper.cmdExecuteWithAdbExit(command) + "\n";
 
 
+                    /**
+                     * 
+                     * 
                     MusicInfo musicInfo = new MusicInfo();
                     musicInfo.title = Path.GetFileName(file);
                     musicInfo.fileName = Path.GetFileName(file);
+
                     Musics.Add(musicInfo);
+
+
+                    progressRing.Visibility = Visibility.Collapsed;
+                    dataGrid.Visibility = Visibility.Collapsed;
+                    musicList.ItemsSource = Musics;
+                    musicList.Visibility = Visibility.Visible;
+                     */
+
+
+                    // 新增音乐
+                    Request request = new Request();
+                    request.command_id = DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString();
+                    request.module = "music";
+                    request.operation = "insert";
+
+                    string requestStr = JsonConvert.SerializeObject(request);
+                    SocketHelper helper = new SocketHelper();
+                    Result result = new Result();
+                    await Task.Run(() =>
+                    {
+                        result = helper.ExecuteOp(requestStr);
+                    });
+
+
                 }
 
-
-                progressRing.Visibility = Visibility.Collapsed;
-                dataGrid.Visibility = Visibility.Collapsed;
-                musicList.ItemsSource = Musics;
-                musicList.Visibility = Visibility.Visible;
 
                 ContentDialog appInfoDialog = new ContentDialog
                 {
@@ -347,6 +406,10 @@ namespace WT_Transfer.Pages
                 };
                 appInfoDialog.XamlRoot = this.Content.XamlRoot;
                 ContentDialogResult re = await appInfoDialog.ShowAsync();
+
+
+                await RefreshMusicList();
+                ListButton_Click(ListButton, new RoutedEventArgs()); // 模拟点击 ListButton
             }
             catch (Exception ex)
             {
@@ -367,6 +430,17 @@ namespace WT_Transfer.Pages
         //Album按钮
         private void GroupByAlbum_Click(object sender, RoutedEventArgs e)
         {
+            // 将所有按钮设置为未选中
+            foreach (var btn in buttons)
+            {
+                VisualStateManager.GoToState(btn, "Unselected", true);
+            }
+
+            // 将点击的按钮设置为选中
+            var button = (Button)sender;
+            VisualStateManager.GoToState(button, "Selected", true);
+
+
             CollectionViewSource groupedItems2 = new CollectionViewSource();
             groupedItems2.IsSourceGrouped = true;
             groupedItems2.Source = MusicsByAlbum;
@@ -375,10 +449,6 @@ namespace WT_Transfer.Pages
             dataGrid.Visibility = Visibility.Collapsed;
             dataGrid1.Visibility = Visibility.Visible;
             musicList.Visibility = Visibility.Collapsed;
-
-            AlbumButton.FontWeight = FontWeights.Bold;
-            SingerButton.FontWeight = FontWeights.Thin;
-            ListButton.FontWeight = FontWeights.Thin;
         }
         
         //Album分类
@@ -393,9 +463,22 @@ namespace WT_Transfer.Pages
         //Singer按钮
         private void GroupBySinger_Click(object sender, RoutedEventArgs e)
         {
+            // 将所有按钮设置为未选中
+            foreach (var btn in buttons)
+            {
+                VisualStateManager.GoToState(btn, "Unselected", true);
+            }
+
+            // 将点击的按钮设置为选中
+            var button = (Button)sender;
+            VisualStateManager.GoToState(button, "Selected", true);
+
+
+
             CollectionViewSource groupedItems = new CollectionViewSource();
             groupedItems.IsSourceGrouped = true;
             groupedItems.Source = MusicsByCreater;
+
 
             dataGrid1.ItemsSource = groupedItems.View;
             dataGrid1.Visibility = Visibility.Collapsed;
@@ -403,76 +486,115 @@ namespace WT_Transfer.Pages
             musicList.Visibility = Visibility.Collapsed;
 
 
-            AlbumButton.FontWeight = FontWeights.Thin;
-            SingerButton.FontWeight = FontWeights.Bold;
-            ListButton.FontWeight = FontWeights.Thin;
         }
 
         //List按钮
         private void ListButton_Click(object sender, RoutedEventArgs e)
         {
+            // 将所有按钮设置为未选中
+            foreach (var btn in buttons)
+            {
+                VisualStateManager.GoToState(btn, "Unselected", true);
+            }
+
+            // 将点击的按钮设置为选中
+            var button = (Button)sender;
+            VisualStateManager.GoToState(button, "Selected", true);
 
             dataGrid1.Visibility = Visibility.Collapsed;
             dataGrid.Visibility = Visibility.Collapsed;
             musicList.Visibility = Visibility.Visible;
             musicList.ItemsSource = Musics;
-
-            AlbumButton.FontWeight = FontWeights.Thin;
-            SingerButton.FontWeight = FontWeights.Thin;
-            ListButton.FontWeight = FontWeights.Bold;
         }
 
-        private async void DelMusic_Click(object sender, RoutedEventArgs e)
+        private async void Delete_Click(object sender, RoutedEventArgs e)
         {
-            //弹框显示
-
-            // 开对话框，选择还原模式
-            ContentDialog appErrorDialog = new ContentDialog
+            // 检查是否有选中的音乐项
+            var selectedMusics = Musics.Where(m => m.IsSelected).ToList();
+            if (!selectedMusics.Any())
             {
-                Title = "Info",
-                Content = "DDo you want to delete the selected music ?",
-                PrimaryButtonText = "Yes",
-                SecondaryButtonText = "Cancel"
-            };
-            appErrorDialog.XamlRoot = this.Content.XamlRoot;
-            ContentDialogResult re = await appErrorDialog.ShowAsync();
-
-            if (re == ContentDialogResult.Primary)
-            {
-                MusicInfo musicInfo;
-                if (musicList.Visibility == Visibility.Visible)
-                {
-                    musicInfo = (MusicInfo)musicList.SelectedItem;
-                }
-                else if (dataGrid.Visibility == Visibility.Visible)
-                {
-                    musicInfo = (MusicInfo)dataGrid.SelectedItem;
-                }
-                else
-                {
-                    musicInfo = (MusicInfo)dataGrid1.SelectedItem;
-                }
-
-                //执行删除操作
-                string res = adbHelper.delFromPath(musicInfo.fileUrl);
-
-                //弹框显示成功
-                appErrorDialog = new ContentDialog
-                {
-                    Title = "Info",
-                    Content = "Successfully deleted.",
-                    PrimaryButtonText = "Yes"
-                };
-                appErrorDialog.XamlRoot = this.Content.XamlRoot;
-                re = await appErrorDialog.ShowAsync();
-
-                //刷新页面
-                await Init();
+                await ShowMessageDialog("No music selected", "Please select at least one music item to delete.");
+                return;
             }
 
+            // 确认删除
+            bool isConfirmed = await ShowConfirmationDialog("Confirm Deletion", $"Are you sure you want to delete {selectedMusics.Count} selected item(s)?");
+            if (!isConfirmed)
+            {
+                return;
+            }
+
+            // 执行删除操作
+            foreach (var music in selectedMusics)
+            {
+                // 删除音乐文件的示例逻辑，您需要根据具体情况实现删除逻辑
+                adbHelper.delFromPath(music.fileUrl);
+                Musics.Remove(music);
+            }
+
+            // 更新UI
+            // 删除音乐
+            Request request = new Request();
+            request.command_id = DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString();
+            request.module = "music";
+            request.operation = "insert";
+
+            string requestStr = JsonConvert.SerializeObject(request);
+            SocketHelper helper = new SocketHelper();
+            Result result = new Result();
+            await Task.Run(() =>
+            {
+                result = helper.ExecuteOp(requestStr);
+            });
 
 
+            // 刷新选中状态
+            //UpdateSelectedFilesInfo();
+
+            ContentDialog appInfoDialog = new ContentDialog
+            {
+                Title = "Info",
+                Content = "Music successfully deleted",
+                PrimaryButtonText = "OK",
+            };
+            appInfoDialog.XamlRoot = this.Content.XamlRoot;
+            ContentDialogResult re = await appInfoDialog.ShowAsync();
+
+
+            await RefreshMusicList();
+            ListButton_Click(ListButton, new RoutedEventArgs()); // 模拟点击 ListButton
         }
+
+        private async Task<bool> ShowConfirmationDialog(string title, string content)
+        {
+            ContentDialog confirmationDialog = new ContentDialog
+            {
+                Title = title,
+                Content = content,
+                PrimaryButtonText = "Delete",
+                SecondaryButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Secondary
+            };
+
+            confirmationDialog.XamlRoot = this.Content.XamlRoot;
+            ContentDialogResult result = await confirmationDialog.ShowAsync();
+
+            return result == ContentDialogResult.Primary;
+        }
+
+        private async Task ShowMessageDialog(string title, string content)
+        {
+            ContentDialog messageDialog = new ContentDialog
+            {
+                Title = title,
+                Content = content,
+                CloseButtonText = "OK"
+            };
+
+            messageDialog.XamlRoot = this.Content.XamlRoot;
+            await messageDialog.ShowAsync();
+        }
+
 
         private async void show_error(string msg)
         {
@@ -487,6 +609,203 @@ namespace WT_Transfer.Pages
             if (re == ContentDialogResult.Primary)
             {
 
+            }
+        }
+
+        private void CheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            UpdateSelectedFilesInfo();
+        }
+
+        private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            UpdateSelectedFilesInfo();
+        }
+
+        //更新选中的文件信息
+        private void UpdateSelectedFilesInfo()
+        {
+            // 假设你有一个方法来获取当前选中的文件和它们的总大小
+            // 这里仅仅是一个示例
+            int selectedCount = Musics.Count(m => m.IsSelected); // 假设你的MusicInfo类有一个IsSelected属性
+                                                                 // 计算选中文件的总大小
+            double totalSelectedSize = Musics
+                .Where(m => m.IsSelected && !string.IsNullOrEmpty(m.size))
+                .Sum(m => ExtractSizeInMB(m.size));
+
+            double totalSize = Musics.Sum(m => ExtractSizeInMB(m.size));
+
+            // 更新TextBlock的文本
+            SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2}MB of {totalSize:F2}MB";
+        }
+
+        //初始化选中文件信息
+        private void InitializeSelectedFilesInfo()
+        {
+            // 初始化时假设没有文件被选中
+            int selectedCount = 0;
+
+            // 计算所有文件的总大小
+            double totalSize = Musics
+                .Where(m => !string.IsNullOrEmpty(m.size))
+                .Sum(m => ExtractSizeInMB(m.size));
+
+            // 更新TextBlock的文本
+            SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - 0MB of {totalSize:F2}MB";
+        }
+
+
+        private double ExtractSizeInMB(string sizeString)
+        {
+            // 尝试从size字符串中移除"M"，然后转换剩余的部分为double
+            var cleanSizeString = sizeString.TrimEnd('M');
+            bool success = double.TryParse(cleanSizeString, out double sizeValue);
+            return success ? sizeValue : 0; // 如果转换失败，返回0
+        }
+
+
+        private void SelectAllCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            foreach (var music in Musics)
+            {
+                music.IsSelected = true;
+            }
+            // 如果你的DataGrid绑定了Musics集合，则刷新DataGrid以显示变化
+            // musicList.Items.Refresh(); // 假设musicList是你DataGrid的名字
+            UpdateSelectedFilesInfo(); // 更新选中文件的信息
+        }
+
+        private void SelectAllCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            foreach (var music in Musics)
+            {
+                music.IsSelected = false;
+            }
+            // 如果你的DataGrid绑定了Musics集合，则刷新DataGrid以显示变化
+            // musicList.Items.Refresh(); // 假设musicList是你DataGrid的名字
+            UpdateSelectedFilesInfo(); // 更新选中文件的信息
+        }
+
+        private void MusicList_Sorting(object sender, DataGridColumnEventArgs e)
+        {
+            var column = e.Column;
+            var header = column.Header.ToString();
+            var direction = column.SortDirection;
+
+            IEnumerable<MusicInfo> sortedItems = null;
+
+            // 根据点击的列头确定排序的属性
+            switch (header)
+            {
+                case "Name":
+                    sortedItems = SortData(Musics, m => m.fileName, direction);
+                    break;
+                case "Artist":
+                    sortedItems = SortData(Musics, m => m.singer, direction);
+                    break;
+                case "Album":
+                    sortedItems = SortData(Musics, m => m.album, direction);
+                    break;
+                case "Time":
+                    sortedItems = SortData(Musics, m => m.duration, direction);
+                    break;
+                case "Size":
+                    sortedItems = SortData(Musics, m => m.size, direction);
+                    break;
+            }
+
+            // 更新排序方向
+            column.SortDirection = direction == null || direction == DataGridSortDirection.Descending
+                ? DataGridSortDirection.Ascending
+                : DataGridSortDirection.Descending;
+
+            // 应用排序结果
+            musicList.ItemsSource = sortedItems.ToList();
+
+            // 清除其他列的排序方向
+            foreach (var dgColumn in musicList.Columns.Where(c => c != column))
+            {
+                dgColumn.SortDirection = null;
+            }
+        }
+
+        private IEnumerable<MusicInfo> SortData<T>(IEnumerable<MusicInfo> source, Func<MusicInfo, T> keySelector, DataGridSortDirection? direction)
+        {
+            if (direction == null || direction == DataGridSortDirection.Descending)
+            {
+                return source.OrderBy(keySelector);
+            }
+            else
+            {
+                return source.OrderByDescending(keySelector);
+            }
+        }
+
+        //查找框 按钮
+        private void SearchButton_Click(object sender, RoutedEventArgs e)
+        {
+            PerformSearch();
+        }
+
+        private void PerformSearch()
+        {
+            // 获取用户输入的搜索文本
+            var searchText = SearchBox.Text.ToLower();
+
+            // 过滤曲目列表
+            var filteredMusics = Musics.Where(m =>
+                (!string.IsNullOrEmpty(m.fileName) && m.fileName.ToLower().Contains(searchText)) ||
+                (!string.IsNullOrEmpty(m.singer) && m.singer.ToLower().Contains(searchText)) ||
+                (!string.IsNullOrEmpty(m.album) && m.album.ToLower().Contains(searchText))
+            ).ToList();
+
+            // 更新数据网格的显示内容
+            musicList.ItemsSource = filteredMusics;
+
+            // 重置排序状态
+            foreach (var column in musicList.Columns)
+            {
+                column.SortDirection = null;
+            }
+        }
+
+        private async void Refresh_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshMusicList();
+            ListButton_Click(ListButton, new RoutedEventArgs()); // 模拟点击 ListButton
+        }
+
+        private async Task RefreshMusicList()
+        {
+            // 显示进度环提示正在加载
+            DispatcherQueue.TryEnqueue(() => {
+                // 显示进度环提示正在加载
+                progressRing.Visibility = Visibility.Visible;
+                _progressRing.IsActive = true;
+            });
+
+            try
+            {
+                // 重新初始化音乐列表
+                await Init();
+
+                // 更新音乐列表显示
+                musicList.ItemsSource = Musics;
+            }
+            catch (Exception ex)
+            {
+                DispatcherQueue.TryEnqueue(() => {
+                    show_error(ex.ToString());
+                    logHelper.Info(logger, ex.ToString());
+                });
+            }
+            finally
+            {
+                DispatcherQueue.TryEnqueue(() => {
+                    // 隐藏进度环
+                    _progressRing.IsActive = false;
+                    progressRing.Visibility = Visibility.Collapsed;
+                });
             }
         }
     }

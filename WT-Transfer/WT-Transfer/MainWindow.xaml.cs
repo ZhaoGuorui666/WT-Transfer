@@ -35,6 +35,12 @@ using Windows.Media.Protection.PlayReady;
 using System.Threading.Tasks;
 using Microsoft.UI.Dispatching;
 using System.Security;
+using Microsoft.UI;
+using Microsoft.UI.Windowing;
+using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.UI.Xaml;
+using Windows.UI.ViewManagement;
+using Windows.UI;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -111,7 +117,7 @@ namespace WT_Transfer
         public static List<PhotoInfo> PhotosSorted { get; set; }
         public static Dictionary<string, List<PhotoInfo>> PhotosInBucket { get; set; }
         public static HashSet<String> buckets { get; set; }
-        public static List<MusicInfo> Musics { get; set; }
+        public static ObservableCollection<MusicInfo> Musics { get; set; }
         public static ObservableCollection<GroupInfoCollection<MusicInfo>> MusicsByCreater
             = new ObservableCollection<GroupInfoCollection<MusicInfo>>();
         public static ObservableCollection<GroupInfoCollection<MusicInfo>> MusicsByAlbum
@@ -139,10 +145,25 @@ namespace WT_Transfer
             {
                 checkUsbHelper.startThread();
 
+                this.Activated += MainWindow_Activated;
+
+                // 设置标题栏颜色
+                // CustomizeTitleBar();
+
                 // 启动窗口时，初始化页面，为了启动定时器
                 //FileTransfer fileTransfer = new FileTransfer();
 
+                //设置标题栏图标
+                WindowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
+                WindowId id = Win32Interop.GetWindowIdFromWindow(WindowHandle);
+                AppWindow appWindow = AppWindow.GetFromWindowId(id);
+                string iconpath = Path.Combine(Package.Current.InstalledLocation.Path, "app.ico");
+                appWindow.SetIcon(iconpath);
+                //设置标题栏文字
+                Title = "    ALL Droid File Transfer Pro";
+
                 this.InitializeComponent();
+
 
 
                 WindowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
@@ -229,6 +250,24 @@ namespace WT_Transfer
                 throw;
             }
         }
+
+        
+
+        private void MainWindow_Activated(object sender, Microsoft.UI.Xaml.WindowActivatedEventArgs args)
+        {
+            // 仅在首次激活窗口时执行
+            if (args.WindowActivationState != WindowActivationState.Deactivated)
+            {
+                var stackPanel = new StackPanel { Orientation = Orientation.Horizontal };
+                var textBlock = new TextBlock { Text = GuideWindow.device.Model };
+                
+                stackPanel.Children.Add(textBlock);
+
+                phoneViewItem.Content = stackPanel;
+            }
+        }
+
+
 
         private void NavigationView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {

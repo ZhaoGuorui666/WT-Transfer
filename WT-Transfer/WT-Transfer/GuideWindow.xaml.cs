@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using AdvancedSharpAdbClient;
+using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -28,6 +29,7 @@ using Windows.ApplicationModel.Core;
 using Windows.Storage;
 using Windows.UI.Core;
 using Windows.UI.Popups;
+using WinRT.Interop;
 using WT_Transfer.Dialog;
 using WT_Transfer.Helper;
 using WT_Transfer.Pages;
@@ -72,14 +74,24 @@ namespace WT_Transfer
         public static string SoftVersion = "1.0";
 
         public static bool disconnected = false;
-
+        public static IntPtr WindowHandle { get; private set; }
         public GuideWindow()
         {
+
             try
             {
                 this.InitializeComponent();
 
                 AdbInit();
+
+                //设置标题栏图标
+                WindowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
+                WindowId id = Win32Interop.GetWindowIdFromWindow(WindowHandle);
+                AppWindow appWindow = AppWindow.GetFromWindowId(id);
+                string iconpath = Path.Combine(Package.Current.InstalledLocation.Path, "app.ico");
+                appWindow.SetIcon(iconpath);
+                //设置标题栏文字
+                Title = "    ALL Droid File Transfer Pro";
 
                 string appFolderPath = AppDomain.CurrentDomain.BaseDirectory;
                 string DefaultPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(appFolderPath, "../images/test.png"));
@@ -98,6 +110,14 @@ namespace WT_Transfer
                 logHelper.Error(logger,ex.ToString());
                 throw;
             }
+        }
+
+        
+        private AppWindow GetAppWindowForCurrentWindow()
+        {
+            IntPtr hWnd = WindowNative.GetWindowHandle(this);
+            WindowId myWndId = Win32Interop.GetWindowIdFromWindow(hWnd);
+            return AppWindow.GetFromWindowId(myWndId);
         }
 
         private async void StartMainPage(object sender, RoutedEventArgs e) {
@@ -135,12 +155,7 @@ namespace WT_Transfer
 
 
                     // 启动新窗口
-                    mainWindow = new MainWindow()
-                    {
-                        Title = "Current Phone : "+ DeviceName
-                        +"     " + "Software version: " + SoftVersion
-                        + "     " + "App version: 1." + (ApkVersion - 1)
-                    };
+                    mainWindow = new MainWindow();
                     currentWindow = mainWindow;
                     mainWindow.Activate();
                     this.Close();

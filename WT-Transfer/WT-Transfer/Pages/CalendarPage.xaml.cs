@@ -121,7 +121,6 @@ namespace WT_Transfer.Pages
             }
             catch (Exception ex)
             {
-
                 logHelper.Info(logger, ex.ToString());
                 throw;
             }

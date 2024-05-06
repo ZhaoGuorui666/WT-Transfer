@@ -58,6 +58,13 @@ namespace WT_Transfer.Helper
                         string str = Encoding.UTF8.GetString(buffer);
                         if (count == 0)
                         {
+                            //判断是不是粘包
+                            string[] strs = str.Split("{");
+                            if (strs.Length > 2)
+                            {
+                                return null;
+                            }
+
                             RequestConfirm requestConfirm = JsonConvert.DeserializeObject<RequestConfirm>(str);
                             if (requestConfirm == null)
                                 continue;

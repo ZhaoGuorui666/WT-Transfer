@@ -17,5 +17,8 @@ namespace WT_Transfer.Models
         public string title { get; set; }
         public string type { get; set; }
         public string year { get; set; }
+
+        // 添加一个新属性来跟踪选中状态
+        public bool IsSelected { get; set; }
     }
 }

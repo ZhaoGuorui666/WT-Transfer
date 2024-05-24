@@ -9,6 +9,8 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:WT_Transfer.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:WT_Transfer.Models"
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     NavigationCacheMode="Enabled"
     mc:Ignorable="d">
@@ -26,6 +28,7 @@
         <StackPanel
             Grid.Row="0"
             Margin="37,20,20,0"
+            HorizontalAlignment="Stretch"
             Orientation="Vertical">
             <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
                 <TextBlock
@@ -49,6 +52,7 @@
                 <StackPanel
                     Height="127"
                     Margin="0,10,0,0"
+                    HorizontalAlignment="Stretch"
                     VerticalAlignment="Center"
                     Background="{ThemeResource threeAppBarButtonBackground}"
                     CornerRadius="5"
@@ -217,70 +221,111 @@
 
         <ScrollViewer
             Grid.Row="1"
+            Margin="37,0,20,0"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
             HorizontalScrollBarVisibility="Auto"
             VerticalScrollBarVisibility="Auto">
-            <StackPanel>
+            <StackPanel HorizontalAlignment="Stretch">
                 <!--  第一张表  -->
-                <controls:DataGrid
-                    x:Name="musicList"
-                    Grid.Row="1"
-                    Margin="12,0,12,12"
-                    VerticalAlignment="Top"
-                    AutoGenerateColumns="False"
-                    IsReadOnly="True"
-                    ItemsSource="{x:Bind Musics, Mode=OneWay}"
-                    RowGroupHeaderPropertyNameAlternative="Singer"
-                    Sorting="MusicList_Sorting"
-                    Visibility="Collapsed">
 
-                    <controls:DataGrid.Columns>
-                        <controls:DataGridTemplateColumn Width="SizeToHeader" Header="Select">
-                            <controls:DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
+                <StackPanel>
+                    <!--  表头  -->
+                    <Border
+                        Margin="0,0,0,5"
+                        Background="#CCCCCC"
+                        CornerRadius="4">
+                        <StackPanel Padding="0" Orientation="Horizontal">
+                            <CheckBox
+                                Width="20"
+                                Margin="10,5,5,5"
+                                IsEnabled="True" />
+                            <!--  占位符，无需实际选择  -->
+                            <TextBlock
+                                Width="150"
+                                Margin="5"
+                                VerticalAlignment="Center"
+                                FontWeight="SemiBold"
+                                Text="Name"
+                                TextAlignment="Center" />
+                            <TextBlock
+                                Width="50"
+                                Margin="5"
+                                VerticalAlignment="Center"
+                                FontWeight="SemiBold"
+                                Text="Time"
+                                TextAlignment="Center" />
+                            <TextBlock
+                                Width="100"
+                                Margin="5"
+                                VerticalAlignment="Center"
+                                FontWeight="SemiBold"
+                                Text="Artist"
+                                TextAlignment="Center" />
+                            <TextBlock
+                                Width="100"
+                                Margin="5"
+                                VerticalAlignment="Center"
+                                FontWeight="SemiBold"
+                                Text="Album"
+                                TextAlignment="Center" />
+                            <TextBlock
+                                Width="50"
+                                Margin="5"
+                                VerticalAlignment="Center"
+                                FontWeight="SemiBold"
+                                Text="Size"
+                                TextAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <!--  数据列表  -->
+                    <muxc:ItemsRepeater x:Name="musicListRepeater" ItemsSource="{x:Bind Musics, Mode=OneWay}">
+                        <muxc:ItemsRepeater.Layout>
+                            <muxc:StackLayout Orientation="Vertical" />
+                        </muxc:ItemsRepeater.Layout>
+                        <muxc:ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="models:MusicInfo">
+                                <StackPanel Padding="0" Orientation="Horizontal">
                                     <CheckBox
-                                        Checked="CheckBox_Checked"
-                                        IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                        Tag="{Binding fileUrl}"
-                                        Unchecked="CheckBox_Unchecked" />
-                                </DataTemplate>
-                            </controls:DataGridTemplateColumn.CellTemplate>
-                        </controls:DataGridTemplateColumn>
+                                        Width="20"
+                                        Margin="10,5,5,5"
+                                        Checked="OnCheckBoxChecked"
+                                        IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
+                                        Unchecked="OnCheckBoxUnchecked" />
+                                    <TextBlock
+                                        Width="150"
+                                        Margin="5"
+                                        Text="{x:Bind fileName}"
+                                        TextAlignment="Center" />
+                                    <TextBlock
+                                        Width="50"
+                                        Margin="5"
+                                        Text="{x:Bind duration}"
+                                        TextAlignment="Center" />
+                                    <TextBlock
+                                        Width="100"
+                                        Margin="5"
+                                        Text="{x:Bind singer}"
+                                        TextAlignment="Center" />
+                                    <TextBlock
+                                        Width="100"
+                                        Margin="5"
+                                        Text="{x:Bind album}"
+                                        TextAlignment="Center" />
+                                    <TextBlock
+                                        Width="50"
+                                        Margin="5"
+                                        Text="{x:Bind size}"
+                                        TextAlignment="Center" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </muxc:ItemsRepeater.ItemTemplate>
+                    </muxc:ItemsRepeater>
 
-                        <controls:DataGridTextColumn
-                            Width="SizeToCells"
-                            Binding="{Binding fileName}"
-                            CanUserSort="True"
-                            FontSize="20"
-                            Header="Name" />
-                        <controls:DataGridTextColumn
-                            Width="SizeToCells"
-                            Binding="{Binding duration}"
-                            CanUserSort="True"
-                            FontSize="20"
-                            Header="Time" />
+                </StackPanel>
 
-                        <controls:DataGridTextColumn
-                            Width="SizeToCells"
-                            Binding="{Binding singer}"
-                            CanUserSort="True"
-                            FontSize="20"
-                            Header="Artist" />
-                        <controls:DataGridTextColumn
-                            Width="SizeToCells"
-                            Binding="{Binding album}"
-                            CanUserSort="True"
-                            FontSize="20"
-                            Header="Album" />
-                        <controls:DataGridTextColumn
-                            Width="SizeToCells"
-                            Binding="{Binding size}"
-                            CanUserSort="True"
-                            FontSize="20"
-                            Header="Size" />
-                    </controls:DataGrid.Columns>
-                </controls:DataGrid>
+
 
                 <!--  第二张表  -->
                 <controls:DataGrid

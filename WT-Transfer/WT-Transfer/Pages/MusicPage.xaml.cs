@@ -41,6 +41,7 @@ using WT_Transfer.Models;
 using WT_Transfer.SocketModels;
 using Path = System.IO.Path;
 using static WT_Transfer.SocketModels.Request;
+using Microsoft.UI;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -140,8 +141,8 @@ namespace WT_Transfer.Pages
 
             progressRing.Visibility = Visibility.Collapsed;
             dataGrid.Visibility = Visibility.Collapsed;
-            musicList.ItemsSource = Musics;
-            musicList.Visibility = Visibility.Visible;
+            musicListRepeater.ItemsSource = Musics;
+            musicListRepeater.Visibility = Visibility.Visible;
         }
 
         private async Task Init()
@@ -243,8 +244,8 @@ namespace WT_Transfer.Pages
                                 dataGrid.ItemsSource = groupedItems.View;
                                 progressRing.Visibility = Visibility.Collapsed;
                                 dataGrid.Visibility = Visibility.Collapsed;
-                                musicList.ItemsSource = Musics;
-                                musicList.Visibility = Visibility.Visible;
+                                musicListRepeater.ItemsSource = Musics;
+                                musicListRepeater.Visibility = Visibility.Visible;
                             });
                         }
                     }
@@ -448,7 +449,7 @@ namespace WT_Transfer.Pages
             dataGrid1.ItemsSource = groupedItems2.View;
             dataGrid.Visibility = Visibility.Collapsed;
             dataGrid1.Visibility = Visibility.Visible;
-            musicList.Visibility = Visibility.Collapsed;
+            musicListRepeater.Visibility = Visibility.Collapsed;
         }
         
         //Album分类
@@ -483,7 +484,7 @@ namespace WT_Transfer.Pages
             dataGrid1.ItemsSource = groupedItems.View;
             dataGrid1.Visibility = Visibility.Collapsed;
             dataGrid.Visibility = Visibility.Visible;
-            musicList.Visibility = Visibility.Collapsed;
+            musicListRepeater.Visibility = Visibility.Collapsed;
 
 
         }
@@ -503,8 +504,8 @@ namespace WT_Transfer.Pages
 
             dataGrid1.Visibility = Visibility.Collapsed;
             dataGrid.Visibility = Visibility.Collapsed;
-            musicList.Visibility = Visibility.Visible;
-            musicList.ItemsSource = Musics;
+            musicListRepeater.Visibility = Visibility.Visible;
+            musicListRepeater.ItemsSource = Musics;
         }
 
         private async void Delete_Click(object sender, RoutedEventArgs e)
@@ -720,13 +721,13 @@ namespace WT_Transfer.Pages
                 : DataGridSortDirection.Descending;
 
             // 应用排序结果
-            musicList.ItemsSource = sortedItems.ToList();
+            musicListRepeater.ItemsSource = sortedItems.ToList();
 
             // 清除其他列的排序方向
-            foreach (var dgColumn in musicList.Columns.Where(c => c != column))
+            /**foreach (var dgColumn in musicListRepeater.Columns.Where(c => c != column))
             {
                 dgColumn.SortDirection = null;
-            }
+            }*/
         }
 
         private IEnumerable<MusicInfo> SortData<T>(IEnumerable<MusicInfo> source, Func<MusicInfo, T> keySelector, DataGridSortDirection? direction)
@@ -760,13 +761,13 @@ namespace WT_Transfer.Pages
             ).ToList();
 
             // 更新数据网格的显示内容
-            musicList.ItemsSource = filteredMusics;
+            musicListRepeater.ItemsSource = filteredMusics;
 
             // 重置排序状态
-            foreach (var column in musicList.Columns)
+            /**foreach (var column in musicList.Columns)
             {
                 column.SortDirection = null;
-            }
+            }*/
         }
 
         private async void Refresh_Click(object sender, RoutedEventArgs e)
@@ -790,7 +791,7 @@ namespace WT_Transfer.Pages
                 await Init();
 
                 // 更新音乐列表显示
-                musicList.ItemsSource = Musics;
+                musicListRepeater.ItemsSource = Musics;
             }
             catch (Exception ex)
             {
@@ -808,5 +809,50 @@ namespace WT_Transfer.Pages
                 });
             }
         }
+
+        private StackPanel _previousSelectedPanel;
+
+        private void OnItemClicked(object sender, PointerRoutedEventArgs e)
+        {
+            var panel = sender as StackPanel;
+
+            if (_previousSelectedPanel != null)
+            {
+                _previousSelectedPanel.ClearValue(StackPanel.StyleProperty);
+            }
+
+            if (panel != null)
+            {
+                panel.Style = (Style)Application.Current.Resources["SelectedItemStyle"];
+                _previousSelectedPanel = panel;
+            }
+        }
+
+        private void OnCheckBoxChecked(object sender, RoutedEventArgs e)
+        {
+            var checkBox = sender as CheckBox;
+            if (checkBox != null)
+            {
+                var panel = checkBox.Parent as StackPanel;
+                if (panel != null)
+                {
+                    panel.Background = new SolidColorBrush(Colors.LightBlue);
+                }
+            }
+        }
+
+        private void OnCheckBoxUnchecked(object sender, RoutedEventArgs e)
+        {
+            var checkBox = sender as CheckBox;
+            if (checkBox != null)
+            {
+                var panel = checkBox.Parent as StackPanel;
+                if (panel != null)
+                {
+                    panel.Background = new SolidColorBrush(Colors.Transparent);
+                }
+            }
+        }
+
     }
 }

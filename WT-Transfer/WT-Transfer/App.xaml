@@ -1,5 +1,5 @@
-<!-- Copyright (c) Microsoft Corporation and Contributors. -->
-<!-- Licensed under the MIT License. -->
+<!--  Copyright (c) Microsoft Corporation and Contributors.  -->
+<!--  Licensed under the MIT License.  -->
 
 <Application
     x:Class="WT_Transfer.App"
@@ -10,65 +10,74 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
-                <!-- Other merged dictionaries here -->
+                <!--  Other merged dictionaries here  -->
             </ResourceDictionary.MergedDictionaries>
-            <!-- Other app resources here -->
-            <!-- 添加自定义的 NavigationViewItemSeparator 样式 -->
+            <!--  Other app resources here  -->
+            <!--  添加自定义的 NavigationViewItemSeparator 样式  -->
             <Style x:Key="EnhancedNavigationViewItemSeparatorStyle" TargetType="NavigationViewItemSeparator">
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="NavigationViewItemSeparator">
-                            <Border Background="DarkGray" Height="1" Opacity="1" Margin="16,10,16,10"/>
+                            <Border
+                                Height="1"
+                                Margin="16,10,16,10"
+                                Background="DarkGray"
+                                Opacity="1" />
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
             </Style>
 
-            <!-- 自定义颜色 -->
-            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#ECEFF7"/>
+            <Style x:Key="SelectedItemStyle" TargetType="StackPanel">
+                <Setter Property="Background" Value="LightBlue" />
+            </Style>
+
+            <!--  自定义颜色  -->
+            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#ECEFF7" />
             <SolidColorBrush x:Key="pageBackground" Color="White" />
             <SolidColorBrush x:Key="threeAppBarButtonBackground" Color="#F3F3F3" />
-            <!--按钮被点击-->
+            <!--  按钮被点击  -->
             <Style x:Key="SelectableButtonStyle" TargetType="Button">
-                <Setter Property="Margin" Value="10,12,0,0"/>
-                <Setter Property="Padding" Value="4,0,4,0"/>
-                <!-- 设置内边距 -->
-                <Setter Property="BorderBrush" Value="Gray"/>
-                <!-- 边框颜色 -->
-                <Setter Property="BorderThickness" Value="1"/>
-                <!-- 边框厚度 -->
-                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Margin" Value="10,12,0,0" />
+                <Setter Property="Padding" Value="4,0,4,0" />
+                <!--  设置内边距  -->
+                <Setter Property="BorderBrush" Value="Gray" />
+                <!--  边框颜色  -->
+                <Setter Property="BorderThickness" Value="1" />
+                <!--  边框厚度  -->
+                <Setter Property="Background" Value="Transparent" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Border x:Name="RootBorder"
-                        Background="{TemplateBinding Background}"
-                        BorderBrush="{TemplateBinding BorderBrush}"
-                        BorderThickness="{TemplateBinding BorderThickness}"
-                        CornerRadius="0">
-                                <!-- 四方角度 -->
+                            <Border
+                                x:Name="RootBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="0">
+                                <ContentPresenter
+                                    Padding="{TemplateBinding Padding}"
+                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                <!--  四方角度  -->
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="CommonStates">
-                                        <VisualState x:Name="Normal"/>
-                                        <VisualState x:Name="PointerOver"/>
-                                        <VisualState x:Name="Pressed"/>
-                                        <!-- 可能还需要其他状态 -->
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver" />
+                                        <VisualState x:Name="Pressed" />
+                                        <!--  可能还需要其他状态  -->
                                     </VisualStateGroup>
                                     <VisualStateGroup x:Name="SelectionStates">
-                                        <VisualState x:Name="Unselected"/>
+                                        <VisualState x:Name="Unselected" />
                                         <VisualState x:Name="Selected">
                                             <Storyboard>
                                                 <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootBorder" Storyboard.TargetProperty="Background">
-                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="#6cb4ec"/>
+                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="#6cb4ec" />
                                                 </ObjectAnimationUsingKeyFrames>
                                             </Storyboard>
                                         </VisualState>
                                     </VisualStateGroup>
                                 </VisualStateManager.VisualStateGroups>
-                                <ContentPresenter
-                        Padding="{TemplateBinding Padding}"
-                        HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                        VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
                             </Border>
                         </ControlTemplate>
                     </Setter.Value>

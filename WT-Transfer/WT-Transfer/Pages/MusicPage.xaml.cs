@@ -51,7 +51,7 @@ namespace WT_Transfer.Pages
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class MusicPage : Page
+    public sealed partial class MusicPage : Page, INotifyPropertyChanged
     {
         public ObservableCollection<MusicInfo> Musics { get; set; } = new ObservableCollection<MusicInfo>();
 
@@ -71,6 +71,21 @@ namespace WT_Transfer.Pages
 
         private List<Button> buttons = new List<Button>();
 
+        private bool _isAllSelected;
+        public bool IsAllSelected
+        {
+            get => _isAllSelected;
+            set
+            {
+                if (_isAllSelected != value)
+                {
+                    _isAllSelected = value;
+                    OnPropertyChanged(nameof(IsAllSelected));
+                    SelectAllMusic(_isAllSelected);
+                }
+            }
+        }
+
         public MusicPage()
         {
             this.InitializeComponent();
@@ -80,6 +95,8 @@ namespace WT_Transfer.Pages
             buttons.Add(ListButton);
             buttons.Add(SingerButton);
             buttons.Add(AlbumButton);
+
+            this.DataContext = this;
         }
 
         private async void LoadingPage_Loaded(object sender, RoutedEventArgs e)
@@ -138,7 +155,6 @@ namespace WT_Transfer.Pages
             this.MusicsByCreater = MainWindow.MusicsByCreater;
 
             
-
             progressRing.Visibility = Visibility.Collapsed;
             dataGrid.Visibility = Visibility.Collapsed;
             musicListRepeater.ItemsSource = Musics;
@@ -282,6 +298,7 @@ namespace WT_Transfer.Pages
             }
 
         }
+
 
         //同步音乐
         private async void PullMusic_Click(object sender, RoutedEventArgs e)
@@ -626,8 +643,6 @@ namespace WT_Transfer.Pages
         //更新选中的文件信息
         private void UpdateSelectedFilesInfo()
         {
-            // 假设你有一个方法来获取当前选中的文件和它们的总大小
-            // 这里仅仅是一个示例
             int selectedCount = Musics.Count(m => m.IsSelected); // 假设你的MusicInfo类有一个IsSelected属性
                                                                  // 计算选中文件的总大小
             double totalSelectedSize = Musics
@@ -662,29 +677,6 @@ namespace WT_Transfer.Pages
             var cleanSizeString = sizeString.TrimEnd('M');
             bool success = double.TryParse(cleanSizeString, out double sizeValue);
             return success ? sizeValue : 0; // 如果转换失败，返回0
-        }
-
-
-        private void SelectAllCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            foreach (var music in Musics)
-            {
-                music.IsSelected = true;
-            }
-            // 如果你的DataGrid绑定了Musics集合，则刷新DataGrid以显示变化
-            // musicList.Items.Refresh(); // 假设musicList是你DataGrid的名字
-            UpdateSelectedFilesInfo(); // 更新选中文件的信息
-        }
-
-        private void SelectAllCheckBox_Unchecked(object sender, RoutedEventArgs e)
-        {
-            foreach (var music in Musics)
-            {
-                music.IsSelected = false;
-            }
-            // 如果你的DataGrid绑定了Musics集合，则刷新DataGrid以显示变化
-            // musicList.Items.Refresh(); // 假设musicList是你DataGrid的名字
-            UpdateSelectedFilesInfo(); // 更新选中文件的信息
         }
 
         private void MusicList_Sorting(object sender, DataGridColumnEventArgs e)
@@ -838,7 +830,19 @@ namespace WT_Transfer.Pages
                 {
                     panel.Background = new SolidColorBrush(Colors.LightBlue);
                 }
+
+                var fileUrl = checkBox.Tag as string;
+                if (!string.IsNullOrEmpty(fileUrl))
+                {
+                    var music = Musics.FirstOrDefault(m => m.fileUrl == fileUrl);
+                    if (music != null)
+                    {
+                        music.IsSelected = true;
+                    }
+                }
             }
+
+            UpdateSelectedFilesInfo();
         }
 
         private void OnCheckBoxUnchecked(object sender, RoutedEventArgs e)
@@ -851,8 +855,50 @@ namespace WT_Transfer.Pages
                 {
                     panel.Background = new SolidColorBrush(Colors.Transparent);
                 }
+
+                var fileUrl = checkBox.Tag as string;
+                if (!string.IsNullOrEmpty(fileUrl))
+                {
+                    var music = Musics.FirstOrDefault(m => m.fileUrl == fileUrl);
+                    if (music != null)
+                    {
+                        music.IsSelected = false;
+                    }
+                }
             }
+
+            UpdateSelectedFilesInfo();
         }
+
+        private void SelectAllMusic(bool isSelected)
+        {
+            foreach (var music in Musics)
+            {
+                music.IsSelected = isSelected;
+            }
+
+            UpdateSelectedFilesInfo();
+        }
+
+        // 事件处理方法
+        private void SelectAllCheckBox_Checked(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            IsAllSelected = true;
+        }
+
+        private void SelectAllCheckBox_Unchecked(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            IsAllSelected = false;
+        }
+
+        // 实现 OnPropertyChanged 方法
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
 
     }
 }

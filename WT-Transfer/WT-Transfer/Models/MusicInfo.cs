@@ -47,7 +47,11 @@ namespace WT_Transfer.Models
         public string singer
         {
             get => _singer;
-            set { _singer = value; OnPropertyChanged(nameof(singer)); }
+            set
+            {
+                _singer = value ?? "Unknown Artist";  // 设置默认值
+                OnPropertyChanged(nameof(singer));
+            }
         }
 
         public string size

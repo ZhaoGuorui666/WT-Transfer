@@ -331,59 +331,54 @@
 
 
                 <!--  第二张表  -->
-          
-                <controls:DataGrid
-                    x:Name="dataGrid"
-                    Grid.Row="1"
-                    Margin="12,0,12,12"
-                    VerticalAlignment="Top"
-                    AutoGenerateColumns="False"
-                    IsReadOnly="True"
-                    LoadingRowGroup="dataGrid_LoadingRowGroup"
-                    RowGroupHeaderPropertyNameAlternative="Singer"
-                    Visibility="Collapsed">
+                <muxc:ItemsRepeater x:Name="artistRepeater" ItemsSource="{x:Bind MusicsByCreater, Mode=OneWay}">
+                    <muxc:ItemsRepeater.Layout>
+                        <muxc:StackLayout Orientation="Vertical" />
+                    </muxc:ItemsRepeater.Layout>
+                    <muxc:ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="models:MusicInfoGroup">
+                            <StackPanel>
+                                <!--  Artist Name  -->
+                                <TextBlock
+                                    Margin="0,10,0,0"
+                                    FontSize="16"
+                                    FontWeight="Bold"
+                                    Text="{x:Bind Key, TargetNullValue='Unknown Artist'}" />
 
-                    <controls:DataGrid.Columns>
-                        <controls:DataGridTemplateColumn Header="Select">
-                            <controls:DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <CheckBox
-                                        Checked="CheckBox_Checked"
-                                        IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                        Tag="{Binding fileUrl}"
-                                        Unchecked="CheckBox_Unchecked" />
-                                </DataTemplate>
-                            </controls:DataGridTemplateColumn.CellTemplate>
-                        </controls:DataGridTemplateColumn>
+                                <!--  Songs List  -->
+                                <muxc:ItemsRepeater Margin="10,0,0,0" ItemsSource="{x:Bind Items}">
+                                    <muxc:ItemsRepeater.Layout>
+                                        <muxc:StackLayout Orientation="Vertical" />
+                                    </muxc:ItemsRepeater.Layout>
+                                    <muxc:ItemsRepeater.ItemTemplate>
+                                        <DataTemplate x:DataType="models:MusicInfo">
+                                            <StackPanel Margin="0,5,0,5" Orientation="Horizontal">
+                                                <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Tag="{x:Bind fileUrl}" />
+                                                <TextBlock
+                                                    Width="150"
+                                                    Margin="5,0"
+                                                    Text="{x:Bind fileName}" />
+                                                <TextBlock
+                                                    Width="50"
+                                                    Margin="5,0"
+                                                    Text="{x:Bind duration}" />
+                                                <TextBlock
+                                                    Width="100"
+                                                    Margin="5,0"
+                                                    Text="{x:Bind singer}" />
+                                                <TextBlock
+                                                    Width="50"
+                                                    Margin="5,0"
+                                                    Text="{x:Bind size}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </muxc:ItemsRepeater.ItemTemplate>
+                                </muxc:ItemsRepeater>
+                            </StackPanel>
+                        </DataTemplate>
+                    </muxc:ItemsRepeater.ItemTemplate>
+                </muxc:ItemsRepeater>
 
-                        <controls:DataGridTextColumn
-                            Width="SizeToCells"
-                            Binding="{Binding fileName}"
-                            FontSize="20"
-                            Header="Name" />
-                        <controls:DataGridTextColumn
-                            Width="SizeToCells"
-                            Binding="{Binding duration}"
-                            FontSize="20"
-                            Header="Time" />
-                        <controls:DataGridTextColumn
-                            Width="SizeToCells"
-                            Binding="{Binding singer}"
-                            FontSize="20"
-                            Header="Artist" />
-                        <controls:DataGridTextColumn
-                            Width="SizeToCells"
-                            Binding="{Binding album}"
-                            FontSize="20"
-                            Header="Album" />
-                        <controls:DataGridTextColumn
-                            Width="SizeToCells"
-                            Binding="{Binding size}"
-                            FontSize="20"
-                            Header="Size" />
-
-                    </controls:DataGrid.Columns>
-                </controls:DataGrid>
 
 
                 <!--  第三张表  -->

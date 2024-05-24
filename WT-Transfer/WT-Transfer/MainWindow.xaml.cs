@@ -118,8 +118,8 @@ namespace WT_Transfer
         public static Dictionary<string, List<PhotoInfo>> PhotosInBucket { get; set; }
         public static HashSet<String> buckets { get; set; }
         public static ObservableCollection<MusicInfo> Musics { get; set; }
-        public static ObservableCollection<GroupInfoCollection<MusicInfo>> MusicsByCreater
-            = new ObservableCollection<GroupInfoCollection<MusicInfo>>();
+        public static ObservableCollection<MusicInfoGroup> MusicsByCreater
+            = new ObservableCollection<MusicInfoGroup>();
         public static ObservableCollection<GroupInfoCollection<MusicInfo>> MusicsByAlbum
             = new ObservableCollection<GroupInfoCollection<MusicInfo>>();
 

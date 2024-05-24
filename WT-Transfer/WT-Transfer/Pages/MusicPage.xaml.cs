@@ -55,8 +55,8 @@ namespace WT_Transfer.Pages
     {
         public ObservableCollection<MusicInfo> Musics { get; set; } = new ObservableCollection<MusicInfo>();
 
-        ObservableCollection<GroupInfoCollection<MusicInfo>> MusicsByCreater
-            = new ObservableCollection<GroupInfoCollection<MusicInfo>>();
+        ObservableCollection<MusicInfoGroup> MusicsByCreater
+            = new ObservableCollection<MusicInfoGroup>();
         ObservableCollection<GroupInfoCollection<MusicInfo>> MusicsByAlbum
             = new ObservableCollection<GroupInfoCollection<MusicInfo>>();
 
@@ -154,11 +154,12 @@ namespace WT_Transfer.Pages
             this.MusicsByAlbum = MainWindow.MusicsByAlbum;
             this.MusicsByCreater = MainWindow.MusicsByCreater;
 
-            
+
             progressRing.Visibility = Visibility.Collapsed;
-            dataGrid.Visibility = Visibility.Collapsed;
+            dataGrid1.Visibility = Visibility.Collapsed;
             musicListRepeater.ItemsSource = Musics;
             musicListRepeater.Visibility = Visibility.Visible;
+            artistRepeater.Visibility = Visibility.Collapsed; // 初始化时隐藏
         }
 
         private async Task Init()
@@ -210,11 +211,12 @@ namespace WT_Transfer.Pages
                             List<MusicInfo> list = JsonConvert.DeserializeObject<List<MusicInfo>>(musicInfo);
 
                             Musics = new ObservableCollection<MusicInfo>(list);
+                            var newMusicsByCreater = new ObservableCollection<MusicInfoGroup>();
 
                             //Implement grouping through LINQ queries
                             var query = from item in list
                                         group item by item.singer into g
-                                        select new { GroupName = g.Key, Items = g };
+                                        select new { GroupName = g.Key ?? "Unknown Artist", Items = g };
                             var query2 = from item in list
                                          group item by item.album into g
                                          select new { GroupName = g.Key, Items = g };
@@ -228,17 +230,17 @@ namespace WT_Transfer.Pages
 
                             foreach (var g in query)
                             {
-                                GroupInfoCollection<MusicInfo> info = new GroupInfoCollection<MusicInfo>();
-                                info.Key = g.GroupName;
+                                var info = new MusicInfoGroup
+                                {
+                                    Key = g.GroupName
+                                };
                                 foreach (var item in g.Items)
                                 {
                                     info.Add(item);
                                 }
-                                DispatcherQueue.TryEnqueue(() =>
-                                {
-                                    MusicsByCreater.Add(info);
-                                });
+                                newMusicsByCreater.Add(info);
                             }
+
                             foreach (var g in query2)
                             {
                                 GroupInfoCollection<MusicInfo> info = new GroupInfoCollection<MusicInfo>();
@@ -256,10 +258,9 @@ namespace WT_Transfer.Pages
                             DispatcherQueue.TryEnqueue(() =>
                             {
                                 groupedItems.IsSourceGrouped = true;
+                                MusicsByCreater = newMusicsByCreater;
                                 groupedItems.Source = MusicsByCreater;
-                                dataGrid.ItemsSource = groupedItems.View;
                                 progressRing.Visibility = Visibility.Collapsed;
-                                dataGrid.Visibility = Visibility.Collapsed;
                                 musicListRepeater.ItemsSource = Musics;
                                 musicListRepeater.Visibility = Visibility.Visible;
                             });
@@ -463,9 +464,8 @@ namespace WT_Transfer.Pages
             groupedItems2.IsSourceGrouped = true;
             groupedItems2.Source = MusicsByAlbum;
 
-            dataGrid1.ItemsSource = groupedItems2.View;
-            dataGrid.Visibility = Visibility.Collapsed;
-            dataGrid1.Visibility = Visibility.Visible;
+            artistRepeater.Visibility = Visibility.Visible;
+            dataGrid1.Visibility = Visibility.Collapsed;
             musicListRepeater.Visibility = Visibility.Collapsed;
         }
         
@@ -481,29 +481,30 @@ namespace WT_Transfer.Pages
         //Singer按钮
         private void GroupBySinger_Click(object sender, RoutedEventArgs e)
         {
-            // 将所有按钮设置为未选中
-            foreach (var btn in buttons)
+            try
             {
-                VisualStateManager.GoToState(btn, "Unselected", true);
+                // 将所有按钮设置为未选中
+                foreach (var btn in buttons)
+                {
+                    VisualStateManager.GoToState(btn, "Unselected", true);
+                }
+
+                // 将点击的按钮设置为选中
+                var button = (Button)sender;
+                VisualStateManager.GoToState(button, "Selected", true);
+
+
+                artistRepeater.ItemsSource = MusicsByCreater;
+                dataGrid1.Visibility = Visibility.Collapsed;
+                musicListRepeater.Visibility = Visibility.Collapsed;
+                artistRepeater.Visibility = Visibility.Visible;
+
             }
+            catch (Exception)
+            {
 
-            // 将点击的按钮设置为选中
-            var button = (Button)sender;
-            VisualStateManager.GoToState(button, "Selected", true);
-
-
-
-            CollectionViewSource groupedItems = new CollectionViewSource();
-            groupedItems.IsSourceGrouped = true;
-            groupedItems.Source = MusicsByCreater;
-
-
-            dataGrid1.ItemsSource = groupedItems.View;
-            dataGrid1.Visibility = Visibility.Collapsed;
-            dataGrid.Visibility = Visibility.Visible;
-            musicListRepeater.Visibility = Visibility.Collapsed;
-
-
+                throw;
+            }
         }
 
         //List按钮
@@ -520,7 +521,6 @@ namespace WT_Transfer.Pages
             VisualStateManager.GoToState(button, "Selected", true);
 
             dataGrid1.Visibility = Visibility.Collapsed;
-            dataGrid.Visibility = Visibility.Collapsed;
             musicListRepeater.Visibility = Visibility.Visible;
             musicListRepeater.ItemsSource = Musics;
         }

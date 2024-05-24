@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 
 namespace WT_Transfer.Models
 {
-    public class GroupInfoCollection<T> : ObservableCollection<T>
+    public class MusicInfoGroup : ObservableCollection<MusicInfo>
     {
         public object Key { get; set; }
 
         // 公开 Items 属性
-        public new ObservableCollection<T> Items
+        public new ObservableCollection<MusicInfo> Items
         {
             get { return this; }
         }

@@ -20,9 +20,8 @@
     <Grid HorizontalAlignment="Stretch" Background="{ThemeResource pageBackground}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <!--  用于标题和按钮  -->
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <!--  用于内容显示，如 DataGrid  -->
         </Grid.RowDefinitions>
 
         <StackPanel
@@ -219,114 +218,111 @@
             </StackPanel>
         </StackPanel>
 
-        <ScrollViewer
+        <!--  表头  -->
+        <Border
             Grid.Row="1"
+            Margin="37,0,20,0"
+            Background="#CCCCCC"
+            CornerRadius="4">
+            <StackPanel Padding="0" Orientation="Horizontal">
+                <CheckBox
+                    Width="20"
+                    Margin="10,5,5,5"
+                    Checked="SelectAllCheckBox_Checked"
+                    IsChecked="{x:Bind IsAllSelected, Mode=TwoWay}"
+                    Unchecked="SelectAllCheckBox_Unchecked" />
+                <!--  占位符，无需实际选择  -->
+                <TextBlock
+                    Width="350"
+                    Margin="5"
+                    VerticalAlignment="Center"
+                    FontWeight="SemiBold"
+                    Text="Name"
+                    TextAlignment="Left" />
+                <TextBlock
+                    Width="100"
+                    Margin="5"
+                    VerticalAlignment="Center"
+                    FontWeight="SemiBold"
+                    Text="Time"
+                    TextAlignment="Left" />
+                <TextBlock
+                    Width="150"
+                    Margin="5"
+                    VerticalAlignment="Center"
+                    FontWeight="SemiBold"
+                    Text="Artist"
+                    TextAlignment="Left" />
+                <TextBlock
+                    Width="150"
+                    Margin="5"
+                    VerticalAlignment="Center"
+                    FontWeight="SemiBold"
+                    Text="Album"
+                    TextAlignment="Left" />
+                <TextBlock
+                    Width="50"
+                    Margin="5"
+                    VerticalAlignment="Center"
+                    FontWeight="SemiBold"
+                    Text="Size"
+                    TextAlignment="Left" />
+            </StackPanel>
+        </Border>
+
+
+        <ScrollViewer
+            Grid.Row="2"
             Margin="37,0,20,0"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
-            HorizontalScrollBarVisibility="Auto"
+            HorizontalScrollBarVisibility="Disabled"
             VerticalScrollBarVisibility="Auto">
-            <StackPanel HorizontalAlignment="Stretch">
+            <StackPanel>
                 <!--  第一张表  -->
-
-                <StackPanel>
-                    <!--  表头  -->
-                    <Border
-                        Margin="0,0,0,5"
-                        Background="#CCCCCC"
-                        CornerRadius="4">
-                        <StackPanel Padding="0" Orientation="Horizontal">
-                            <CheckBox
-                                Width="20"
-                                Margin="10,5,5,5"
-                                Checked="SelectAllCheckBox_Checked"
-                                IsChecked="{x:Bind IsAllSelected, Mode=TwoWay}"
-                                Unchecked="SelectAllCheckBox_Unchecked" />
-                            <!--  占位符，无需实际选择  -->
-                            <TextBlock
-                                Width="150"
-                                Margin="5"
-                                VerticalAlignment="Center"
-                                FontWeight="SemiBold"
-                                Text="Name"
-                                TextAlignment="Center" />
-                            <TextBlock
-                                Width="50"
-                                Margin="5"
-                                VerticalAlignment="Center"
-                                FontWeight="SemiBold"
-                                Text="Time"
-                                TextAlignment="Center" />
-                            <TextBlock
-                                Width="100"
-                                Margin="5"
-                                VerticalAlignment="Center"
-                                FontWeight="SemiBold"
-                                Text="Artist"
-                                TextAlignment="Center" />
-                            <TextBlock
-                                Width="100"
-                                Margin="5"
-                                VerticalAlignment="Center"
-                                FontWeight="SemiBold"
-                                Text="Album"
-                                TextAlignment="Center" />
-                            <TextBlock
-                                Width="50"
-                                Margin="5"
-                                VerticalAlignment="Center"
-                                FontWeight="SemiBold"
-                                Text="Size"
-                                TextAlignment="Center" />
-                        </StackPanel>
-                    </Border>
-
-                    <!--  数据列表  -->
-                    <muxc:ItemsRepeater x:Name="musicListRepeater" ItemsSource="{x:Bind Musics, Mode=OneWay}">
-                        <muxc:ItemsRepeater.Layout>
-                            <muxc:StackLayout Orientation="Vertical" />
-                        </muxc:ItemsRepeater.Layout>
-                        <muxc:ItemsRepeater.ItemTemplate>
-                            <DataTemplate x:DataType="models:MusicInfo">
-                                <StackPanel Padding="0" Orientation="Horizontal">
-                                    <CheckBox
-                                        Width="20"
-                                        Margin="10,5,5,5"
-                                        Checked="OnCheckBoxChecked"
-                                        IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
-                                        Tag="{x:Bind fileUrl}"
-                                        Unchecked="OnCheckBoxUnchecked" />
-                                    <TextBlock
-                                        Width="150"
-                                        Margin="5"
-                                        Text="{x:Bind fileName}"
-                                        TextAlignment="Center" />
-                                    <TextBlock
-                                        Width="50"
-                                        Margin="5"
-                                        Text="{x:Bind duration}"
-                                        TextAlignment="Center" />
-                                    <TextBlock
-                                        Width="100"
-                                        Margin="5"
-                                        Text="{x:Bind singer}"
-                                        TextAlignment="Center" />
-                                    <TextBlock
-                                        Width="100"
-                                        Margin="5"
-                                        Text="{x:Bind album}"
-                                        TextAlignment="Center" />
-                                    <TextBlock
-                                        Width="50"
-                                        Margin="5"
-                                        Text="{x:Bind size}"
-                                        TextAlignment="Center" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </muxc:ItemsRepeater.ItemTemplate>
-                    </muxc:ItemsRepeater>
-
-                </StackPanel>
+                <muxc:ItemsRepeater x:Name="musicListRepeater" ItemsSource="{x:Bind Musics, Mode=OneWay}">
+                    <muxc:ItemsRepeater.Layout>
+                        <muxc:StackLayout Orientation="Vertical" />
+                    </muxc:ItemsRepeater.Layout>
+                    <muxc:ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="models:MusicInfo">
+                            <StackPanel Padding="0" Orientation="Horizontal">
+                                <CheckBox
+                                    Width="20"
+                                    Margin="10,5,5,5"
+                                    Checked="OnCheckBoxChecked"
+                                    IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
+                                    Tag="{x:Bind fileUrl}"
+                                    Unchecked="OnCheckBoxUnchecked" />
+                                <TextBlock
+                                    Width="350"
+                                    Margin="5"
+                                    Text="{x:Bind fileName}"
+                                    TextAlignment="Left" />
+                                <TextBlock
+                                    Width="100"
+                                    Margin="5"
+                                    Text="{x:Bind duration}"
+                                    TextAlignment="Left" />
+                                <TextBlock
+                                    Width="150"
+                                    Margin="5"
+                                    Text="{x:Bind singer}"
+                                    TextAlignment="Left" />
+                                <TextBlock
+                                    Width="150"
+                                    Margin="5"
+                                    Text="{x:Bind album}"
+                                    TextAlignment="Left" />
+                                <TextBlock
+                                    Width="50"
+                                    Margin="5"
+                                    Text="{x:Bind size}"
+                                    TextAlignment="Left" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </muxc:ItemsRepeater.ItemTemplate>
+                </muxc:ItemsRepeater>
 
 
 
@@ -337,7 +333,7 @@
                     </muxc:ItemsRepeater.Layout>
                     <muxc:ItemsRepeater.ItemTemplate>
                         <DataTemplate x:DataType="models:MusicInfoGroup">
-                            <muxc:Expander Header="{x:Bind Key, TargetNullValue='Unknown Artist'}" IsExpanded="True">
+                            <muxc:Expander Header="{x:Bind Key, TargetNullValue='Unknown Artist'}" IsExpanded="False">
                                 <muxc:Expander.HeaderTemplate>
                                     <DataTemplate>
                                         <StackPanel Margin="0,5,0,5" Orientation="Horizontal">

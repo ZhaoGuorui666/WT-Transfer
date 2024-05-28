@@ -899,6 +899,28 @@ namespace WT_Transfer.Pages
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
+        private void OnGroupCheckBoxChecked(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox groupCheckBox && groupCheckBox.Tag is MusicInfoGroup group)
+            {
+                foreach (var item in group)
+                {
+                    item.IsSelected = true;
+                }
+            }
+        }
+
+        private void OnGroupCheckBoxUnchecked(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox groupCheckBox && groupCheckBox.Tag is MusicInfoGroup group)
+            {
+                foreach (var item in group)
+                {
+                    item.IsSelected = false;
+                }
+            }
+        }
+
 
     }
 }

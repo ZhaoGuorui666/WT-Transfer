@@ -88,15 +88,24 @@ namespace WT_Transfer.Pages
 
         public MusicPage()
         {
-            this.InitializeComponent();
+            try {
+                this.InitializeComponent();
 
-            this.Loaded += LoadingPage_Loaded;
+                this.Loaded += LoadingPage_Loaded;
 
-            buttons.Add(ListButton);
-            buttons.Add(SingerButton);
-            buttons.Add(AlbumButton);
+                buttons.Add(ListButton);
+                buttons.Add(SingerButton);
+                buttons.Add(AlbumButton);
 
-            this.DataContext = this;
+                this.DataContext = this;
+            
+            }
+            catch (Exception ex)
+            {
+                show_error(ex.ToString());
+                logHelper.Info(logger, ex.ToString());
+                throw;
+            }
         }
 
         private async void LoadingPage_Loaded(object sender, RoutedEventArgs e)
@@ -258,8 +267,26 @@ namespace WT_Transfer.Pages
                             DispatcherQueue.TryEnqueue(() =>
                             {
                                 groupedItems.IsSourceGrouped = true;
+
+                                //按照歌手分类，使用TreeView渲染
                                 MusicsByCreater = newMusicsByCreater;
                                 groupedItems.Source = MusicsByCreater;
+                                foreach (var group in MusicsByCreater)
+                                {
+                                    var singerNode = new TreeViewNode();
+                                    singerNode.Content = group.Key; // Artist name as the node content
+                                    singerNode.IsExpanded = false;
+                                    artistRepeater.RootNodes.Add(singerNode);
+
+                                    foreach (var song in group.Items)
+                                    {
+                                        var songNode = new TreeViewNode();
+                                        songNode.Content = song; // Song details as the node content
+                                        singerNode.Children.Add(songNode);
+                                    }
+                                }
+
+
                                 progressRing.Visibility = Visibility.Collapsed;
                                 musicListRepeater.ItemsSource = Musics;
                                 musicListRepeater.Visibility = Visibility.Visible;
@@ -493,8 +520,7 @@ namespace WT_Transfer.Pages
                 var button = (Button)sender;
                 VisualStateManager.GoToState(button, "Selected", true);
 
-
-                artistRepeater.ItemsSource = MusicsByCreater;
+                
                 dataGrid1.Visibility = Visibility.Collapsed;
                 musicListRepeater.Visibility = Visibility.Collapsed;
                 artistRepeater.Visibility = Visibility.Visible;
@@ -521,6 +547,7 @@ namespace WT_Transfer.Pages
             VisualStateManager.GoToState(button, "Selected", true);
 
             dataGrid1.Visibility = Visibility.Collapsed;
+            artistRepeater.Visibility = Visibility.Collapsed;
             musicListRepeater.Visibility = Visibility.Visible;
             musicListRepeater.ItemsSource = Musics;
         }
@@ -921,6 +948,28 @@ namespace WT_Transfer.Pages
             }
         }
 
+        
+    }
 
+    public class SingerItemTemplateSelector : DataTemplateSelector
+    {
+        public DataTemplate SingerInfoTemplate { get; set; }
+        public DataTemplate MusicInfoTemplate { get; set; }
+
+        protected override DataTemplate SelectTemplateCore(object item)
+        {
+            var node = (TreeViewNode)item;
+
+            if (node.Children.Count > 0)
+            {
+                // If the node has children, it's an artist folder
+                return SingerInfoTemplate;
+            }
+            else
+            {
+                // If the node has no children, it's a song
+                return MusicInfoTemplate;
+            }
+        }
     }
 }

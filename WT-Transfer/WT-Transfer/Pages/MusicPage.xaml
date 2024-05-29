@@ -15,7 +15,54 @@
     NavigationCacheMode="Enabled"
     mc:Ignorable="d">
 
+    <Page.Resources>
+        <DataTemplate x:Key="MusicInfoTemplate" x:DataType="muxc:TreeViewNode">
+            <StackPanel Padding="0" Orientation="Horizontal">
+                <TextBlock
+                    Width="400"
+                    Margin="5"
+                    Text="{Binding Content.fileName}"
+                    TextAlignment="Left" />
+                <TextBlock
+                    Width="100"
+                    Margin="5"
+                    Text="{Binding Content.duration}"
+                    TextAlignment="Left" />
+                <TextBlock
+                    Width="150"
+                    Margin="5"
+                    Text="{Binding Content.singer}"
+                    TextAlignment="Left" />
+                <TextBlock
+                    Width="150"
+                    Margin="5"
+                    Text="{Binding Content.album}"
+                    TextAlignment="Left" />
+                <TextBlock
+                    Width="50"
+                    Margin="5"
+                    Text="{Binding Content.size}"
+                    TextAlignment="Left" />
+            </StackPanel>
+        </DataTemplate>
 
+        <DataTemplate x:Key="SingerInfoTemplate" x:DataType="muxc:TreeViewNode">
+            <StackPanel Height="44" Orientation="Horizontal">
+                <SymbolIcon Margin="0,0,4,0" Symbol="MusicInfo" />
+                <TextBlock
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    Style="{ThemeResource BodyTextBlockStyle}"
+                    Text="{x:Bind Content}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <local:SingerItemTemplateSelector
+            x:Key="SingerItemTemplateSelector"
+            MusicInfoTemplate="{StaticResource MusicInfoTemplate}"
+            SingerInfoTemplate="{StaticResource SingerInfoTemplate}" />
+
+    </Page.Resources>
 
     <Grid HorizontalAlignment="Stretch" Background="{ThemeResource pageBackground}">
         <Grid.RowDefinitions>
@@ -327,68 +374,11 @@
 
 
                 <!--  第二张表  -->
-                <muxc:ItemsRepeater x:Name="artistRepeater" ItemsSource="{x:Bind MusicsByCreater, Mode=OneWay}">
-                    <muxc:ItemsRepeater.Layout>
-                        <muxc:StackLayout Orientation="Vertical" />
-                    </muxc:ItemsRepeater.Layout>
-                    <muxc:ItemsRepeater.ItemTemplate>
-                        <DataTemplate x:DataType="models:MusicInfoGroup">
-                            <muxc:Expander Header="{x:Bind Key, TargetNullValue='Unknown Artist'}" IsExpanded="False">
-                                <muxc:Expander.HeaderTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Margin="0,5,0,5" Orientation="Horizontal">
-                                            <CheckBox
-                                                Margin="0,0,10,0"
-                                                Checked="OnGroupCheckBoxChecked"
-                                                Tag="{x:Bind}"
-                                                Unchecked="OnGroupCheckBoxUnchecked" />
-                                            <TextBlock
-                                                FontSize="16"
-                                                FontWeight="Bold"
-                                                Text="{x:Bind}" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </muxc:Expander.HeaderTemplate>
-                                <ScrollViewer>
-                                    <muxc:ItemsRepeater Margin="10,0,0,0" ItemsSource="{x:Bind Items}">
-                                        <muxc:ItemsRepeater.Layout>
-                                            <muxc:StackLayout Orientation="Vertical" />
-                                        </muxc:ItemsRepeater.Layout>
-                                        <muxc:ItemsRepeater.ItemTemplate>
-                                            <DataTemplate x:DataType="models:MusicInfo">
-                                                <StackPanel Margin="0,5,0,5" Orientation="Horizontal">
-                                                    <CheckBox
-                                                        Checked="OnCheckBoxChecked"
-                                                        IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
-                                                        Tag="{x:Bind fileUrl}"
-                                                        Unchecked="OnCheckBoxUnchecked" />
-                                                    <TextBlock
-                                                        Width="150"
-                                                        Margin="5,0"
-                                                        Text="{x:Bind fileName}" />
-                                                    <TextBlock
-                                                        Width="50"
-                                                        Margin="5,0"
-                                                        Text="{x:Bind duration}" />
-                                                    <TextBlock
-                                                        Width="100"
-                                                        Margin="5,0"
-                                                        Text="{x:Bind singer}" />
-                                                    <TextBlock
-                                                        Width="50"
-                                                        Margin="5,0"
-                                                        Text="{x:Bind size}" />
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </muxc:ItemsRepeater.ItemTemplate>
-                                    </muxc:ItemsRepeater>
-                                </ScrollViewer>
-                            </muxc:Expander>
-                        </DataTemplate>
-                    </muxc:ItemsRepeater.ItemTemplate>
-                </muxc:ItemsRepeater>
-
-
+                <muxc:TreeView
+                    x:Name="artistRepeater"
+                    Grid.Row="1"
+                    ItemTemplateSelector="{StaticResource SingerItemTemplateSelector}"
+                    SelectionMode="Multiple" />
 
                 <!--  第三张表  -->
                 <controls:DataGrid

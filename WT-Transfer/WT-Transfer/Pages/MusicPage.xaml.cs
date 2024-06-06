@@ -51,14 +51,14 @@ namespace WT_Transfer.Pages
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class MusicPage : Page
+    public sealed partial class MusicPage : Page, INotifyPropertyChanged
     {
         public ObservableCollection<MusicInfo> Musics { get; set; } = new ObservableCollection<MusicInfo>();
 
-        ObservableCollection<GroupInfoCollection<MusicInfo>> MusicsByCreater
-            = new ObservableCollection<GroupInfoCollection<MusicInfo>>();
-        ObservableCollection<GroupInfoCollection<MusicInfo>> MusicsByAlbum
-            = new ObservableCollection<GroupInfoCollection<MusicInfo>>();
+        ObservableCollection<MusicInfoGroup> MusicsByCreater
+            = new ObservableCollection<MusicInfoGroup>();
+        ObservableCollection<MusicInfoGroup> MusicsByAlbum
+            = new ObservableCollection<MusicInfoGroup>();
 
         private AdbClient client = GuideWindow.client;
         private DeviceData device = GuideWindow.device;
@@ -71,15 +71,41 @@ namespace WT_Transfer.Pages
 
         private List<Button> buttons = new List<Button>();
 
+        private bool _isAllSelected;
+        public bool IsAllSelected
+        {
+            get => _isAllSelected;
+            set
+            {
+                if (_isAllSelected != value)
+                {
+                    _isAllSelected = value;
+                    OnPropertyChanged(nameof(IsAllSelected));
+                    SelectAllMusic(_isAllSelected);
+                }
+            }
+        }
+
         public MusicPage()
         {
-            this.InitializeComponent();
+            try {
+                this.InitializeComponent();
 
-            this.Loaded += LoadingPage_Loaded;
+                this.Loaded += LoadingPage_Loaded;
 
-            buttons.Add(ListButton);
-            buttons.Add(SingerButton);
-            buttons.Add(AlbumButton);
+                buttons.Add(ListButton);
+                buttons.Add(SingerButton);
+                buttons.Add(AlbumButton);
+
+                this.DataContext = this;
+            
+            }
+            catch (Exception ex)
+            {
+                show_error(ex.ToString());
+                logHelper.Info(logger, ex.ToString());
+                throw;
+            }
         }
 
         private async void LoadingPage_Loaded(object sender, RoutedEventArgs e)
@@ -137,12 +163,12 @@ namespace WT_Transfer.Pages
             this.MusicsByAlbum = MainWindow.MusicsByAlbum;
             this.MusicsByCreater = MainWindow.MusicsByCreater;
 
-            
 
             progressRing.Visibility = Visibility.Collapsed;
-            dataGrid.Visibility = Visibility.Collapsed;
+            albumRepeater.Visibility = Visibility.Collapsed;
             musicListRepeater.ItemsSource = Musics;
             musicListRepeater.Visibility = Visibility.Visible;
+            artistRepeater.Visibility = Visibility.Collapsed; // 初始化时隐藏
         }
 
         private async Task Init()
@@ -194,14 +220,16 @@ namespace WT_Transfer.Pages
                             List<MusicInfo> list = JsonConvert.DeserializeObject<List<MusicInfo>>(musicInfo);
 
                             Musics = new ObservableCollection<MusicInfo>(list);
+                            var newMusicsByCreater = new ObservableCollection<MusicInfoGroup>();
+                            var newMusicsByAlbum = new ObservableCollection<MusicInfoGroup>();
 
                             //Implement grouping through LINQ queries
                             var query = from item in list
                                         group item by item.singer into g
-                                        select new { GroupName = g.Key, Items = g };
+                                        select new { GroupName = g.Key ?? "Unknown Artist", Items = g };
                             var query2 = from item in list
                                          group item by item.album into g
-                                         select new { GroupName = g.Key, Items = g };
+                                         select new { GroupName = g.Key ?? "Unknown Artist", Items = g };
 
                             // 在添加新项之前先清空这些集合
                             DispatcherQueue.TryEnqueue(() =>
@@ -212,38 +240,69 @@ namespace WT_Transfer.Pages
 
                             foreach (var g in query)
                             {
-                                GroupInfoCollection<MusicInfo> info = new GroupInfoCollection<MusicInfo>();
-                                info.Key = g.GroupName;
+                                var info = new MusicInfoGroup
+                                {
+                                    Key = g.GroupName
+                                };
                                 foreach (var item in g.Items)
                                 {
                                     info.Add(item);
                                 }
-                                DispatcherQueue.TryEnqueue(() =>
-                                {
-                                    MusicsByCreater.Add(info);
-                                });
+                                newMusicsByCreater.Add(info);
                             }
+
                             foreach (var g in query2)
                             {
-                                GroupInfoCollection<MusicInfo> info = new GroupInfoCollection<MusicInfo>();
-                                info.Key = g.GroupName;
+                                var info = new MusicInfoGroup
+                                {
+                                    Key = g.GroupName
+                                };
                                 foreach (var item in g.Items)
                                 {
                                     info.Add(item);
                                 }
-                                DispatcherQueue.TryEnqueue(() =>
-                                {
-                                    MusicsByAlbum.Add(info);
-                                });
+                                newMusicsByAlbum.Add(info);
                             }
 
                             DispatcherQueue.TryEnqueue(() =>
                             {
                                 groupedItems.IsSourceGrouped = true;
+
+                                //按照歌手分类，使用TreeView渲染
+                                MusicsByCreater = newMusicsByCreater;
+                                MusicsByAlbum = newMusicsByAlbum;
                                 groupedItems.Source = MusicsByCreater;
-                                dataGrid.ItemsSource = groupedItems.View;
+                                foreach (var group in MusicsByCreater)
+                                {
+                                    var singerNode = new TreeViewNode();
+                                    singerNode.Content = group.Key; // Artist name as the node content
+                                    singerNode.IsExpanded = false;
+                                    artistRepeater.RootNodes.Add(singerNode);
+
+                                    foreach (var song in group.Items)
+                                    {
+                                        var songNode = new TreeViewNode();
+                                        songNode.Content = song; // Song details as the node content
+                                        singerNode.Children.Add(songNode);
+                                    }
+                                }
+                                foreach (var group in MusicsByAlbum)
+                                {
+                                    var albumNode = new TreeViewNode();
+                                    albumNode.Content = group.Key; // Artist name as the node content
+                                    albumNode.IsExpanded = false;
+                                    albumRepeater.RootNodes.Add(albumNode);
+
+                                    foreach (var song in group.Items)
+                                    {
+                                        var songNode = new TreeViewNode();
+                                        songNode.Content = song; // Song details as the node content
+                                        albumNode.Children.Add(songNode);
+                                    }
+                                }
+
+
                                 progressRing.Visibility = Visibility.Collapsed;
-                                dataGrid.Visibility = Visibility.Collapsed;
                                 musicListRepeater.ItemsSource = Musics;
                                 musicListRepeater.Visibility = Visibility.Visible;
                             });
@@ -283,6 +342,7 @@ namespace WT_Transfer.Pages
 
         }
 
+
         //同步音乐
         private async void PullMusic_Click(object sender, RoutedEventArgs e)
         {
@@ -316,19 +376,7 @@ namespace WT_Transfer.Pages
                     });
                 });
 
-                //infoBar.Visibility = Visibility.Collapsed;
-
-
                 SyncMessage.Text = "Music successfully backup.";
-
-                //ContentDialog appInfoDialog = new ContentDialog
-                //{
-                //    Title = "Info",
-                //    Content = "Musci successfully backup",
-                //    PrimaryButtonText = "OK",
-                //};
-                //appInfoDialog.XamlRoot = this.Content.XamlRoot;
-                //ContentDialogResult re = await appInfoDialog.ShowAsync();
             }
             catch (Exception ex)
             {
@@ -362,23 +410,6 @@ namespace WT_Transfer.Pages
                     string fileName = Path.GetFileName(file);
                     string command = "push \"" + file + "\"" + " \"" + "/sdcard/Music/" + fileName + "\"";
                     string res = adbHelper.cmdExecuteWithAdbExit(command) + "\n";
-
-
-                    /**
-                     * 
-                     * 
-                    MusicInfo musicInfo = new MusicInfo();
-                    musicInfo.title = Path.GetFileName(file);
-                    musicInfo.fileName = Path.GetFileName(file);
-
-                    Musics.Add(musicInfo);
-
-
-                    progressRing.Visibility = Visibility.Collapsed;
-                    dataGrid.Visibility = Visibility.Collapsed;
-                    musicList.ItemsSource = Musics;
-                    musicList.Visibility = Visibility.Visible;
-                     */
 
 
                     // 新增音乐
@@ -446,47 +477,43 @@ namespace WT_Transfer.Pages
             groupedItems2.IsSourceGrouped = true;
             groupedItems2.Source = MusicsByAlbum;
 
-            dataGrid1.ItemsSource = groupedItems2.View;
-            dataGrid.Visibility = Visibility.Collapsed;
-            dataGrid1.Visibility = Visibility.Visible;
+            artistRepeater.Visibility = Visibility.Collapsed;
+            albumRepeater.Visibility = Visibility.Visible;
             musicListRepeater.Visibility = Visibility.Collapsed;
+
+            IsAllSelected = false;
+            UpdateSelectedFilesInfo();
         }
         
-        //Album分类
-        private void dataGrid1_LoadingRowGroup(object sender, CommunityToolkit.WinUI.UI.Controls.DataGridRowGroupHeaderEventArgs e)
-        {
-
-            ICollectionViewGroup group = e.RowGroupHeader.CollectionViewGroup;
-            MusicInfo item = group.GroupItems[0] as MusicInfo;
-            e.RowGroupHeader.PropertyValue = item.album;
-        }
 
         //Singer按钮
         private void GroupBySinger_Click(object sender, RoutedEventArgs e)
         {
-            // 将所有按钮设置为未选中
-            foreach (var btn in buttons)
+            try
             {
-                VisualStateManager.GoToState(btn, "Unselected", true);
+                // 将所有按钮设置为未选中
+                foreach (var btn in buttons)
+                {
+                    VisualStateManager.GoToState(btn, "Unselected", true);
+                }
+
+                // 将点击的按钮设置为选中
+                var button = (Button)sender;
+                VisualStateManager.GoToState(button, "Selected", true);
+
+                
+                albumRepeater.Visibility = Visibility.Collapsed;
+                musicListRepeater.Visibility = Visibility.Collapsed;
+                artistRepeater.Visibility = Visibility.Visible;
+                IsAllSelected = false;
+                UpdateSelectedFilesInfo();
+
             }
+            catch (Exception)
+            {
 
-            // 将点击的按钮设置为选中
-            var button = (Button)sender;
-            VisualStateManager.GoToState(button, "Selected", true);
-
-
-
-            CollectionViewSource groupedItems = new CollectionViewSource();
-            groupedItems.IsSourceGrouped = true;
-            groupedItems.Source = MusicsByCreater;
-
-
-            dataGrid1.ItemsSource = groupedItems.View;
-            dataGrid1.Visibility = Visibility.Collapsed;
-            dataGrid.Visibility = Visibility.Visible;
-            musicListRepeater.Visibility = Visibility.Collapsed;
-
-
+                throw;
+            }
         }
 
         //List按钮
@@ -502,10 +529,12 @@ namespace WT_Transfer.Pages
             var button = (Button)sender;
             VisualStateManager.GoToState(button, "Selected", true);
 
-            dataGrid1.Visibility = Visibility.Collapsed;
-            dataGrid.Visibility = Visibility.Collapsed;
+            albumRepeater.Visibility = Visibility.Collapsed;
+            artistRepeater.Visibility = Visibility.Collapsed;
             musicListRepeater.Visibility = Visibility.Visible;
             musicListRepeater.ItemsSource = Musics;
+            IsAllSelected = false;
+            UpdateSelectedFilesInfo();
         }
 
         private async void Delete_Click(object sender, RoutedEventArgs e)
@@ -613,31 +642,56 @@ namespace WT_Transfer.Pages
             }
         }
 
-        private void CheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            UpdateSelectedFilesInfo();
-        }
-
-        private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
-        {
-            UpdateSelectedFilesInfo();
-        }
 
         //更新选中的文件信息
         private void UpdateSelectedFilesInfo()
         {
-            // 假设你有一个方法来获取当前选中的文件和它们的总大小
-            // 这里仅仅是一个示例
-            int selectedCount = Musics.Count(m => m.IsSelected); // 假设你的MusicInfo类有一个IsSelected属性
-                                                                 // 计算选中文件的总大小
-            double totalSelectedSize = Musics
-                .Where(m => m.IsSelected && !string.IsNullOrEmpty(m.size))
-                .Sum(m => ExtractSizeInMB(m.size));
+            if(musicListRepeater.Visibility == Visibility)
+            {
+                int selectedCount = Musics.Count(m => m.IsSelected); // 假设你的MusicInfo类有一个IsSelected属性
+                                                                     // 计算选中文件的总大小
+                double totalSelectedSize = Musics
+                    .Where(m => m.IsSelected && !string.IsNullOrEmpty(m.size))
+                    .Sum(m => ExtractSizeInMB(m.size));
 
-            double totalSize = Musics.Sum(m => ExtractSizeInMB(m.size));
+                double totalSize = Musics.Sum(m => ExtractSizeInMB(m.size));
 
-            // 更新TextBlock的文本
-            SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2}MB of {totalSize:F2}MB";
+                // 更新TextBlock的文本
+                SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2}MB of {totalSize:F2}MB";
+            }
+            else if(artistRepeater.Visibility == Visibility)
+            {
+                // 获取新增选中的节点
+                IList<TreeViewNode> selectedNodes = artistRepeater.SelectedNodes;
+                IList<TreeViewNode> filteredNodes = selectedNodes.Where(node => !node.HasChildren).ToList();
+
+                int selectedCount = filteredNodes.Count;
+                double totalSelectedSize = filteredNodes
+                    .Sum(m => ExtractSizeInMB(((MusicInfo)m.Content).size));
+
+
+                double totalSize = Musics.Sum(m => ExtractSizeInMB(m.size));
+
+                // 更新TextBlock的文本
+                SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2}MB of {totalSize:F2}MB";
+            }
+            else if (albumRepeater.Visibility == Visibility)
+            {
+                // 获取新增选中的节点
+                IList<TreeViewNode> selectedNodes = albumRepeater.SelectedNodes;
+                IList<TreeViewNode> filteredNodes = selectedNodes.Where(node => !node.HasChildren).ToList();
+
+                int selectedCount = filteredNodes.Count;
+                double totalSelectedSize = filteredNodes
+                    .Sum(m => ExtractSizeInMB(((MusicInfo)m.Content).size));
+
+
+                double totalSize = Musics.Sum(m => ExtractSizeInMB(m.size));
+
+                // 更新TextBlock的文本
+                SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2}MB of {totalSize:F2}MB";
+            }
+
         }
 
         //初始化选中文件信息
@@ -662,29 +716,6 @@ namespace WT_Transfer.Pages
             var cleanSizeString = sizeString.TrimEnd('M');
             bool success = double.TryParse(cleanSizeString, out double sizeValue);
             return success ? sizeValue : 0; // 如果转换失败，返回0
-        }
-
-
-        private void SelectAllCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            foreach (var music in Musics)
-            {
-                music.IsSelected = true;
-            }
-            // 如果你的DataGrid绑定了Musics集合，则刷新DataGrid以显示变化
-            // musicList.Items.Refresh(); // 假设musicList是你DataGrid的名字
-            UpdateSelectedFilesInfo(); // 更新选中文件的信息
-        }
-
-        private void SelectAllCheckBox_Unchecked(object sender, RoutedEventArgs e)
-        {
-            foreach (var music in Musics)
-            {
-                music.IsSelected = false;
-            }
-            // 如果你的DataGrid绑定了Musics集合，则刷新DataGrid以显示变化
-            // musicList.Items.Refresh(); // 假设musicList是你DataGrid的名字
-            UpdateSelectedFilesInfo(); // 更新选中文件的信息
         }
 
         private void MusicList_Sorting(object sender, DataGridColumnEventArgs e)
@@ -812,21 +843,6 @@ namespace WT_Transfer.Pages
 
         private StackPanel _previousSelectedPanel;
 
-        private void OnItemClicked(object sender, PointerRoutedEventArgs e)
-        {
-            var panel = sender as StackPanel;
-
-            if (_previousSelectedPanel != null)
-            {
-                _previousSelectedPanel.ClearValue(StackPanel.StyleProperty);
-            }
-
-            if (panel != null)
-            {
-                panel.Style = (Style)Application.Current.Resources["SelectedItemStyle"];
-                _previousSelectedPanel = panel;
-            }
-        }
 
         private void OnCheckBoxChecked(object sender, RoutedEventArgs e)
         {
@@ -838,7 +854,19 @@ namespace WT_Transfer.Pages
                 {
                     panel.Background = new SolidColorBrush(Colors.LightBlue);
                 }
+
+                var fileUrl = checkBox.Tag as string;
+                if (!string.IsNullOrEmpty(fileUrl))
+                {
+                    var music = Musics.FirstOrDefault(m => m.fileUrl == fileUrl);
+                    if (music != null)
+                    {
+                        music.IsSelected = true;
+                    }
+                }
             }
+
+            UpdateSelectedFilesInfo();
         }
 
         private void OnCheckBoxUnchecked(object sender, RoutedEventArgs e)
@@ -851,8 +879,129 @@ namespace WT_Transfer.Pages
                 {
                     panel.Background = new SolidColorBrush(Colors.Transparent);
                 }
+
+                var fileUrl = checkBox.Tag as string;
+                if (!string.IsNullOrEmpty(fileUrl))
+                {
+                    var music = Musics.FirstOrDefault(m => m.fileUrl == fileUrl);
+                    if (music != null)
+                    {
+                        music.IsSelected = false;
+                    }
+                }
             }
+
+            UpdateSelectedFilesInfo();
+        }
+
+        private void SelectAllMusic(bool isSelected)
+        {
+            if (musicListRepeater.Visibility == Visibility)
+            {
+                foreach (var music in Musics)
+                {
+                    music.IsSelected = isSelected;
+                }
+            }
+            else if (artistRepeater.Visibility == Visibility)
+            {
+                if (isSelected)
+                {
+                    artistRepeater.SelectAll();
+                }
+                else
+                {
+                    artistRepeater.SelectedNodes.Clear();
+                }
+            }
+            else if (albumRepeater.Visibility == Visibility)
+            {
+                if (isSelected)
+                {
+                    albumRepeater.SelectAll();
+                }
+                else
+                {
+                    albumRepeater.SelectedNodes.Clear();
+                }
+            }
+
+            UpdateSelectedFilesInfo();
+        }
+
+        // 事件处理方法
+        private void SelectAllCheckBox_Checked(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            IsAllSelected = true;
+        }
+
+        private void SelectAllCheckBox_Unchecked(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            IsAllSelected = false;
+        }
+
+        // 实现 OnPropertyChanged 方法
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private void Artist_SelectionChanged(TreeView treeViewNode, TreeViewSelectionChangedEventArgs args)
+        {
+            UpdateSelectedFilesInfo();
+        }
+        private void Album_SelectionChanged(TreeView treeViewNode, TreeViewSelectionChangedEventArgs args)
+        {
+            UpdateSelectedFilesInfo();
         }
 
     }
+
+    public class SingerItemTemplateSelector : DataTemplateSelector
+    {
+        public DataTemplate SingerInfoTemplate { get; set; }
+        public DataTemplate MusicInfoTemplate { get; set; }
+
+        protected override DataTemplate SelectTemplateCore(object item)
+        {
+            var node = (TreeViewNode)item;
+
+            if (node.Children.Count > 0)
+            {
+                // If the node has children, it's an artist folder
+                return SingerInfoTemplate;
+            }
+            else
+            {
+                // If the node has no children, it's a song
+                return MusicInfoTemplate;
+            }
+        }
+    }
+
+    public class AlbumItemTemplateSelector : DataTemplateSelector
+    {
+        public DataTemplate AlbumInfoTemplate { get; set; }
+        public DataTemplate MusicInfoTemplate { get; set; }
+
+        protected override DataTemplate SelectTemplateCore(object item)
+        {
+            var node = (TreeViewNode)item;
+
+            if (node.Children.Count > 0)
+            {
+                // If the node has children, it's an artist folder
+                return AlbumInfoTemplate;
+            }
+            else
+            {
+                // If the node has no children, it's a song
+                return MusicInfoTemplate;
+            }
+        }
+    }
 }
+
+

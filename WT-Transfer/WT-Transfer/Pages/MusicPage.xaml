@@ -57,10 +57,27 @@
             </StackPanel>
         </DataTemplate>
 
+        <DataTemplate x:Key="AlbumInfoTemplate" x:DataType="muxc:TreeViewNode">
+            <StackPanel Height="44" Orientation="Horizontal">
+                <SymbolIcon Margin="0,0,4,0" Symbol="MusicInfo" />
+                <TextBlock
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    Style="{ThemeResource BodyTextBlockStyle}"
+                    Text="{x:Bind Content}" />
+            </StackPanel>
+        </DataTemplate>
+
         <local:SingerItemTemplateSelector
             x:Key="SingerItemTemplateSelector"
             MusicInfoTemplate="{StaticResource MusicInfoTemplate}"
             SingerInfoTemplate="{StaticResource SingerInfoTemplate}" />
+
+
+        <local:AlbumItemTemplateSelector
+            x:Key="AlbumItemTemplateSelector"
+            AlbumInfoTemplate="{StaticResource AlbumInfoTemplate}"
+            MusicInfoTemplate="{StaticResource MusicInfoTemplate}" />
 
     </Page.Resources>
 
@@ -378,62 +395,16 @@
                     x:Name="artistRepeater"
                     Grid.Row="1"
                     ItemTemplateSelector="{StaticResource SingerItemTemplateSelector}"
+                    SelectionChanged="Artist_SelectionChanged"
                     SelectionMode="Multiple" />
 
                 <!--  第三张表  -->
-                <controls:DataGrid
-                    x:Name="dataGrid1"
-                    Grid.Row="1"
-                    Margin="12,0,12,12"
-                    VerticalAlignment="Top"
-                    AutoGenerateColumns="False"
-                    IsReadOnly="True"
-                    LoadingRowGroup="dataGrid1_LoadingRowGroup"
-                    RowGroupHeaderPropertyNameAlternative="Album"
-                    Visibility="Collapsed">
-
-                    <controls:DataGrid.Columns>
-                        <controls:DataGridTemplateColumn Header="Select">
-                            <controls:DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <CheckBox
-                                        Checked="CheckBox_Checked"
-                                        IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                        Tag="{Binding fileUrl}"
-                                        Unchecked="CheckBox_Unchecked" />
-                                </DataTemplate>
-                            </controls:DataGridTemplateColumn.CellTemplate>
-                        </controls:DataGridTemplateColumn>
-
-                        <controls:DataGridTextColumn
-                            Width="SizeToCells"
-                            Binding="{Binding fileName}"
-                            FontSize="20"
-                            Header="Name" />
-                        <controls:DataGridTextColumn
-                            Width="SizeToCells"
-                            Binding="{Binding duration}"
-                            FontSize="20"
-                            Header="Time" />
-
-                        <controls:DataGridTextColumn
-                            Width="SizeToCells"
-                            Binding="{Binding singer}"
-                            FontSize="20"
-                            Header="Artist" />
-                        <controls:DataGridTextColumn
-                            Width="SizeToCells"
-                            Binding="{Binding album}"
-                            FontSize="20"
-                            Header="Album" />
-                        <controls:DataGridTextColumn
-                            Width="SizeToCells"
-                            Binding="{Binding size}"
-                            FontSize="20"
-                            Header="Size" />
-
-                    </controls:DataGrid.Columns>
-                </controls:DataGrid>
+                <muxc:TreeView
+                    x:Name="albumRepeater"
+                    Grid.Row="2"
+                    ItemTemplateSelector="{StaticResource AlbumItemTemplateSelector}"
+                    SelectionChanged="Album_SelectionChanged"
+                    SelectionMode="Multiple" />
             </StackPanel>
         </ScrollViewer>
 

@@ -120,8 +120,8 @@ namespace WT_Transfer
         public static ObservableCollection<MusicInfo> Musics { get; set; }
         public static ObservableCollection<MusicInfoGroup> MusicsByCreater
             = new ObservableCollection<MusicInfoGroup>();
-        public static ObservableCollection<GroupInfoCollection<MusicInfo>> MusicsByAlbum
-            = new ObservableCollection<GroupInfoCollection<MusicInfo>>();
+        public static ObservableCollection<MusicInfoGroup> MusicsByAlbum
+            = new ObservableCollection<MusicInfoGroup>();
 
         //正在备份的模块
         public static bool contact_isRuning = false;

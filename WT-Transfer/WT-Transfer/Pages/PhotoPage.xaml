@@ -8,6 +8,7 @@
     xmlns:Model="using:WT_Transfer.Models"
     xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:helpers="using:WT_Transfer.Helper"
     xmlns:local="using:WT_Transfer.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
@@ -15,18 +16,20 @@
     mc:Ignorable="d">
 
     <Page.Resources>
+        <helpers:CountToStringConverter x:Key="ItemCountConverter" />
+
+
         <DataTemplate x:Key="BucketsTemplate">
             <StackPanel DoubleTapped="StackPanel_DoubleTapped" Orientation="Vertical">
                 <Image
                     Grid.Row="0"
+                    Width="100"
+                    Height="100"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Top"
-                    Source="/Images/folder.jpg"
-                    Stretch="Fill" />
-                <TextBlock
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Top"
-                    Text="{Binding}" />
+                    Source="{Binding FirstPhotoPath}" />
+                <TextBlock HorizontalAlignment="Center" Text="{Binding Name}" />
+                <TextBlock HorizontalAlignment="Center" Text="{Binding PhotoCount, Converter={StaticResource ItemCountConverter}}" />
             </StackPanel>
         </DataTemplate>
         <DataTemplate x:Key="PhotosTemplate" x:DataType="Model:PhotoInfo">
@@ -57,6 +60,7 @@
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
 
+        <!--  标题栏  -->
         <StackPanel
             Grid.Row="0"
             VerticalAlignment="Bottom"
@@ -121,6 +125,7 @@
                 Visibility="Collapsed" />
         </StackPanel>
 
+        <!--  加载进度条  -->
         <StackPanel
             x:Name="progressRing"
             Grid.Row="1"
@@ -149,33 +154,6 @@
 
         <ScrollViewer Grid.Row="1">
             <StackPanel Orientation="Vertical">
-                <StackPanel Orientation="Horizontal">
-
-                    <Button
-                        x:Name="DirectoryButton"
-                        Width="200"
-                        Margin="10,12,12,0"
-                        BorderThickness="0"
-                        Click="DirectoryButton_Click"
-                        Content="Directory"
-                        FontSize="20"
-                        FontWeight="Bold" />
-                    <Button
-                        x:Name="ListButton"
-                        Width="200"
-                        Margin="10,12,12,0"
-                        BorderThickness="0"
-                        Click="ListButton_Click"
-                        Content="Photo"
-                        FontSize="20" />
-                </StackPanel>
-
-                <controls:AdaptiveGridView
-                    x:Name="PhotoListGrid"
-                    DesiredWidth="130"
-                    ItemHeight="150"
-                    ItemTemplate="{StaticResource PhotosTemplate}"
-                    Visibility="Visible" />
 
                 <controls:AdaptiveGridView
                     x:Name="BucketGrid"
@@ -192,42 +170,6 @@
                     Visibility="Collapsed" />
             </StackPanel>
         </ScrollViewer>
-
-        <!--  最下一行 分页  -->
-        <StackPanel
-            Grid.Row="2"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            BorderBrush="#f4f4f4"
-            BorderThickness="1"
-            CornerRadius="5"
-            Orientation="Horizontal">
-            <Button Click="Button_Click" Style="{StaticResource AccentButtonStyle}">
-                <Button.Content>
-                    <StackPanel Orientation="Horizontal">
-                        <FontIcon
-                            Margin="0,0,8,0"
-                            FontFamily="Segoe MDL2 Assets"
-                            Glyph="&#xE830;" />
-                        <TextBlock Text="prev" />
-                    </StackPanel>
-                </Button.Content>
-            </Button>
-
-            <TextBlock
-                x:Name="pageNum"
-                Margin="12,0,12,0"
-                VerticalAlignment="Center" />
-
-            <Button Click="Button_Click_1" Style="{StaticResource AccentButtonStyle}">
-                <Button.Content>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Margin="0,0,8,0" Text="next" />
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEA47;" />
-                    </StackPanel>
-                </Button.Content>
-            </Button>
-        </StackPanel>
 
         <!--  权限弹窗  -->
         <ContentDialog

@@ -1,5 +1,5 @@
-// Copyright (c) Microsoft Corporation and Contributors.
-// Licensed under the MIT License.
+// 版权所有 (c) Microsoft Corporation and Contributors.
+// 根据 MIT 许可证获得许可。
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -34,46 +34,46 @@ using MathNet.Numerics.RootFinding;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Org.BouncyCastle.Asn1.X509;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
-
 namespace WT_Transfer.Pages
 {
     /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
+    /// 一个空白页面，可以单独使用或在 Frame 内导航到此页面。
     /// </summary>
     public sealed partial class PhotoPage : Page
     {
+        // 辅助类用于各种功能
         SocketHelper socketHelper = new SocketHelper();
         AdbHelper adbHelper = new AdbHelper();
 
+        // 日志记录实例
         Logger logger = LogManager.GetCurrentClassLogger();
         LogHelper logHelper = new LogHelper();
         CheckUsbHelper checkUsbHelper = new CheckUsbHelper();
 
+        // 用于存储照片信息的数据结构
         public List<PhotoInfo> Photos = new List<PhotoInfo>();
         public List<PhotoInfo> PhotosSorted = new List<PhotoInfo>();
         public Dictionary<string, List<PhotoInfo>> PhotosInBucket { get; set; }
         HashSet<String> buckets = new HashSet<string>();
         string currentBucket = "";
-        //当前操作模块，是目录还是图片
-        //photo photoList bucket
+
+        // 当前操作的模块
         string currentModule = "bucket";
         List<PhotoInfo> currentPhotos = new List<PhotoInfo>();
 
-        int bucketSize = 36;
-        int pageSize = 36;
-        int currentPage = 1;
-        int totalPages = 0;
+        //Alubm列表数据
+        List<AlbumInfo> albumList = new List<AlbumInfo>();
 
-
+        // 构造函数
         public PhotoPage()
         {
             this.InitializeComponent();
 
+            // 页面加载时调用 LoadingPage_Loaded 方法
             this.Loaded += LoadingPage_Loaded;
         }
 
+        // 页面加载完成后的处理方法
         private async void LoadingPage_Loaded(object sender, RoutedEventArgs e)
         {
             try
@@ -115,6 +115,7 @@ namespace WT_Transfer.Pages
             }
         }
 
+        // 初始化页面的方法
         private void InitPage()
         {
             Photos = MainWindow.Photos;
@@ -122,15 +123,15 @@ namespace WT_Transfer.Pages
             PhotosInBucket = MainWindow.PhotosInBucket;
             PhotosSorted = MainWindow.PhotosSorted;
 
-            BucketGrid.ItemsSource = buckets.Take(bucketSize).ToList();
-            totalPages = (buckets.Count + bucketSize - 1) / bucketSize; // 总页数
-            pageNum.Text = currentPage + " / " + totalPages;
+            // 设置目录网格的数据源并更新分页信息
+            BucketGrid.ItemsSource = PhotosInBucket;
 
-
+            // 隐藏进度环并显示目录网格
             progressRing.Visibility = Visibility.Collapsed;
             BucketGrid.Visibility = Visibility.Visible;
         }
 
+        // 初始化数据的方法
         private async Task Init()
         {
             try
@@ -148,7 +149,6 @@ namespace WT_Transfer.Pages
 
                     SocketHelper helper = new SocketHelper();
                     AdbHelper adbHelper = new AdbHelper();
-
 
                     Result result = new Result();
                     await Task.Run(() =>
@@ -169,9 +169,9 @@ namespace WT_Transfer.Pages
                         else
                         {
                             string str = adbHelper.readFromPath(result.path, "picture");
-                            //读数据
+                            // 解析数据
                             JArray jArray = JArray.Parse(str);
-                            // use LINQ query to get DisplayName and MobileNum
+                            // 使用 LINQ 查询获取 DisplayName 和 MobileNum
                             var resultArray = (from item in jArray
                                                select new
                                                {
@@ -181,7 +181,7 @@ namespace WT_Transfer.Pages
                                                })
                                             .ToArray();
 
-                            //文件夹数量
+                            // 统计文件夹数量
                             foreach (var item in resultArray)
                             {
                                 if (item.Bucket == null)
@@ -192,7 +192,7 @@ namespace WT_Transfer.Pages
                                 buckets.Add(item.Bucket);
                             }
 
-                            //渲染进map
+                            // 将数据存储到字典中
                             foreach (var item in resultArray)
                             {
                                 PhotoInfo photoInfo = new PhotoInfo();
@@ -210,7 +210,7 @@ namespace WT_Transfer.Pages
                                 List<PhotoInfo> photos = new List<PhotoInfo>();
                                 if (PhotosInBucket.TryGetValue(photoInfo.Bucket, out photos))
                                 {
-                                    // map中有，直接存入
+                                    // 如果字典中已有该键，直接添加照片信息
                                     photos.Add(photoInfo);
                                 }
                                 else
@@ -221,32 +221,38 @@ namespace WT_Transfer.Pages
                                 }
                             }
 
-                            //Photos.OrderByDescending(item => item
-                            //Todo 要在Photos找是哪张照片，这里不能排序
-                            //Photos = Photos.OrderByDescending(item => item.Date).ToList();
-
-                            DispatcherQueue.TryEnqueue(() => {
-                                BucketGrid.ItemsSource = buckets.Take(bucketSize).ToList();
-                                totalPages = (buckets.Count + bucketSize - 1) / bucketSize; // 总页数
-                                pageNum.Text = currentPage + " / " + totalPages;
-
-                                progressRing.Visibility = Visibility.Collapsed;
-                                BucketGrid.Visibility = Visibility.Visible;
-                            });
-
+                            // 使用 LINQ 查询排序照片信息
                             PhotosSorted = new List<PhotoInfo>(Photos);
                             PhotosSorted = PhotosSorted.OrderByDescending(p => p.Date).ToList();
 
-                            //缓存
+                            // 缓存数据
                             MainWindow.buckets = buckets;
                             MainWindow.Photos = Photos;
                             MainWindow.PhotosSorted = PhotosSorted;
                             MainWindow.PhotosInBucket = PhotosInBucket;
+                            AddAlbumList();
+
+
+                            // 更新界面
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
+                                try
+                                {
+                                    BucketGrid.ItemsSource = albumList;
+                                    progressRing.Visibility = Visibility.Collapsed;
+                                    BucketGrid.Visibility = Visibility.Visible;
+                                }
+                                catch (Exception ex)
+                                {
+                                    show_error("Error updating UI: " + ex.Message);
+                                    logHelper.Info(logger, ex.ToString());
+                                }
+                            });
                         }
                     }
                     else if (result.status.Equals("101"))
                     {
-                        // 不成功
+                        // 无权限
                         DispatcherQueue.TryEnqueue(() => {
                             permission.Hide();
                             show_error(" No permissions granted.");
@@ -256,7 +262,7 @@ namespace WT_Transfer.Pages
                     }
                     else
                     {
-                        // 修改不成功
+                        // 查询失败
                         show_error("Photo query failed ,please check the phone connection.");
                     }
                 });
@@ -270,241 +276,38 @@ namespace WT_Transfer.Pages
             }
         }
 
-        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        private List<AlbumInfo> AddAlbumList()
         {
-        }
-
-        //前一页
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            try
+            foreach (var kv in PhotosInBucket)
             {
-
-                if (currentPage == 1)
+                List<PhotoInfo> photos = new List<PhotoInfo>();
+                photos.Add(kv.Value.First());
+                setPhotoImgPath(photos);
+                if (kv.Value.Count > 0)
                 {
-                    //在第一页
+                    var firstPhotoPath = kv.Value.First().LocalPath;
+                    albumList.Add(new AlbumInfo
+                    {
+                        Name = kv.Key,
+                        FirstPhotoPath = firstPhotoPath,
+                        PhotoCount = kv.Value.Count
+                    });
                 }
                 else
                 {
-                    if (currentModule.Equals("bucket"))
+                    albumList.Add(new AlbumInfo
                     {
-                        List<string> list = PreviousPage(currentModule).Select(s => (string)s).ToList();
-
-                        BucketGrid.ItemsSource = list;
-                    }
-                    else if(currentModule.Equals("photo"))
-                    {
-                        List<PhotoInfo> list = PreviousPage(currentModule).Select(s => (PhotoInfo)s).ToList();
-                        setPhotoImgPath(list);
-                        PhotoGrid.ItemsSource = list;
-                    }
-                    else
-                    {
-                        List<PhotoInfo> list = PreviousPage(currentModule).Select(s => (PhotoInfo)s).ToList();
-                        setPhotoImgPath(list);
-                        PhotoListGrid.ItemsSource = list;
-                    }
-                    pageNum.Text = currentPage + " / " + totalPages;
+                        Name = kv.Key,
+                        FirstPhotoPath = "/Images/folder.jpg", // 默认封面图片
+                        PhotoCount = 0
+                    });
                 }
             }
-            catch (Exception ex)
-            {
-                show_error(ex.ToString());
-                logHelper.Info(logger, ex.ToString());
-                throw;
-            }
 
+            return albumList;
         }
 
-        //后一页
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (currentPage == totalPages)
-                {
-                    //是最后一页
-                }
-                else
-                {
-                    if (currentModule.Equals("bucket"))
-                    {
-                        List<string> list = NextPage(currentModule).Select(s => (string)s).ToList();
-
-                        BucketGrid.ItemsSource = list;
-                    }
-                    else if (currentModule.Equals("photo"))
-                    {
-                        List<PhotoInfo> list = NextPage(currentModule).Select(s => (PhotoInfo)s).ToList();
-                        setPhotoImgPath(list);
-                        PhotoGrid.ItemsSource = list;
-                    }
-                    else
-                    {
-                        List<PhotoInfo> list = NextPage(currentModule).Select(s => (PhotoInfo)s).ToList();
-                        setPhotoImgPath(list);
-                        PhotoListGrid.ItemsSource = list;
-                    }
-                    pageNum.Text = currentPage + " / " + totalPages;
-                }
-            }
-            catch (Exception ex)
-            {
-                show_error(ex.ToString());
-                logHelper.Info(logger, ex.ToString());
-                throw;
-            }
-        }
-
-        // 获取当前目录页的元素
-        List<Object> GetCurrentPageItems(string module)
-        {
-            try
-            {
-                if (module.Equals("bucket"))
-                {
-                    //操作目录
-                    int startIndex = (currentPage - 1) * bucketSize;
-                    int endIndex = Math.Min(startIndex + bucketSize, buckets.Count);
-                    return buckets.ToList().GetRange(startIndex, endIndex - startIndex)
-                        .Select(s => (object)s).ToList();
-                }
-                else if (module.Equals("photo"))
-                {
-                    // 操作图片
-                    int startIndex = (currentPage - 1) * pageSize;
-                    int endIndex = Math.Min(startIndex + pageSize, PhotosInBucket[currentBucket].Count);
-                    List<PhotoInfo> photoInfos = PhotosInBucket[currentBucket].ToList().GetRange(startIndex, endIndex - startIndex);
-                    currentPhotos = photoInfos;
-
-                    return photoInfos.Select(s => (object)s).ToList();
-                }
-                else
-                {
-                    // 操作图片List
-                    int startIndex = (currentPage - 1) * pageSize;
-                    int endIndex = Math.Min(startIndex + pageSize, PhotosSorted.Count);
-                    List<PhotoInfo> photoInfos = PhotosSorted.ToList().GetRange(startIndex, endIndex - startIndex);
-                    currentPhotos = photoInfos;
-
-                    return photoInfos.Select(s => (object)s).ToList();
-                }
-            }
-            catch (Exception ex)
-            {
-                show_error(ex.ToString());
-                logHelper.Info(logger, ex.ToString());
-                throw;
-            }
-            
-        }
-
-        // 前一页
-        List<object> PreviousPage(string module)
-        {
-            ////返回图片前一页
-            //if (currentPage > 1)
-            //{
-            //    currentPage--;
-            //    return GetCurrentPageItems(module);
-            //    // 执行前一页的操作
-            //}
-
-            if (module.Equals("bucket"))
-            {
-                //返回目录下一页
-                int totalPages = (buckets.Count + bucketSize - 1) / bucketSize; // 总页数
-                if (currentPage > 1)
-                {
-                    currentPage--;
-                    return GetCurrentPageItems(module);
-                    // 执行后一页的操作
-                }
-                return null;
-            }
-            else if (module.Equals("photo"))
-            {
-                //返回图片下一页
-                int totalPages = (PhotosInBucket[currentBucket].Count + bucketSize - 1) / bucketSize; // 总页数
-                if (currentPage > 1)
-                {
-                    currentPage--;
-                    return GetCurrentPageItems(module);
-                    // 执行后一页的操作
-                }
-                return null;
-            }
-            else
-            {
-                //返回图片下一页
-                int totalPages = (Photos.Count + pageSize - 1) / pageSize; // 总页数
-                if (currentPage > 1)
-                {
-                    currentPage--;
-                    return GetCurrentPageItems(module);
-                    // 执行后一页的操作
-                }
-                return null;
-            }
-
-
-            return null;
-        }
-
-        // 后一页
-        List<object> NextPage(string module)
-        {
-            try
-            {
-
-                if (module.Equals("bucket"))
-                {
-                    //返回目录下一页
-                    int totalPages = (buckets.Count + bucketSize - 1) / bucketSize; // 总页数
-                    if (currentPage < totalPages)
-                    {
-                        currentPage++;
-                        return GetCurrentPageItems(module);
-                        // 执行后一页的操作
-                    }
-                    return null;
-                }
-                else if (module.Equals("photo"))
-                {
-                    //返回图片下一页
-                    int totalPages = (PhotosInBucket[currentBucket].Count + bucketSize - 1) / bucketSize; // 总页数
-                    if (currentPage < totalPages)
-                    {
-                        currentPage++;
-                        return GetCurrentPageItems(module);
-                        // 执行后一页的操作
-                    }
-                    return null;
-                }
-                else
-                {
-                    //返回图片下一页
-                    int totalPages = (Photos.Count + pageSize - 1) / pageSize; // 总页数
-                    if (currentPage < totalPages)
-                    {
-                        currentPage++;
-                        return GetCurrentPageItems(module);
-                        // 执行后一页的操作
-                    }
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                show_error(ex.ToString());
-                logHelper.Info(logger, ex.ToString());
-                throw;
-            }
-
-
-        }
-
-        //双击目录
+        // 双击目录的事件处理方法
         private void StackPanel_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
             try
@@ -515,38 +318,33 @@ namespace WT_Transfer.Pages
                     // 检查子元素是否为 TextBlock 类型
                     if (child is TextBlock textBlock)
                     {
-                        // 拿到目录名称
+                        // 获取目录名称
                         string bucket = textBlock.Text;
                         currentBucket = bucket;
                         List<PhotoInfo> photos = new List<PhotoInfo>();
                         if (PhotosInBucket.TryGetValue(bucket, out photos))
                         {
-                            //按照时间排序
+                            // 按时间排序
                             photos = photos.OrderByDescending(item => item.Date).ToList();
                             PhotosInBucket[bucket] = photos;
 
-                            //拿到图片了
+                            // 更新当前模块和分页信息
                             currentModule = "photo";
 
-                            //重置变量
-                            currentPage = 1;
-                            totalPages = (photos.Count + pageSize - 1) / pageSize; // 总页数
-                            pageNum.Text = currentPage + " / " + totalPages;
-
-                            //更改页面
+                            // 切换到照片网格视图
                             BucketGrid.Visibility = Visibility.Collapsed;
                             PhotoGrid.Visibility = Visibility.Visible;
 
-                            //查看Photo在原来list中的位置，同时渲染拉取缩率图，显示缩率图
-                            setPhotoImgPath(photos.Take(pageSize).ToList());
+                            // 设置照片的缩略图路径
+                            setPhotoImgPath(photos.ToList());
 
-                            //设置数据源
-                            currentPhotos = photos.Take(pageSize).ToList();
-                            PhotoGrid.ItemsSource = photos.Take(pageSize).ToList();
+                            // 设置数据源
+                            currentPhotos = photos.ToList();
+                            PhotoGrid.ItemsSource = photos.ToList();
                         }
                         else
                         {
-                            //找不到图片
+                            // 找不到图片
                         }
                     }
                 }
@@ -559,7 +357,7 @@ namespace WT_Transfer.Pages
             }
         }
 
-        //设置对应图片的缩率图
+        // 设置照片的缩略图路径
         public void setPhotoImgPath(List<PhotoInfo> photos)
         {
             try
@@ -567,8 +365,7 @@ namespace WT_Transfer.Pages
                 foreach (var photo in photos)
                 {
                     int index = Photos.FindIndex(p => p.Title == photo.Title);
-                    //photo.LocalPath = "/Images/pic/" + index + ".jpg";
-                    //拉到Images目录下
+                    // 设置缩略图路径
                     string phonePath =
                         "/storage/emulated/0/Android/data/com.example.contacts/files/Download/pic/" + index + ".jpg";
 
@@ -593,13 +390,12 @@ namespace WT_Transfer.Pages
             }
         }
 
-        //同步选中的文件夹
+        // 同步选中的文件夹
         private async void SyncFolder_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-
-                //没有选中
+                // 没有选中文件夹
                 if (BucketGrid.SelectedItem == null)
                 {
                     ContentDialog a = new ContentDialog
@@ -649,9 +445,8 @@ namespace WT_Transfer.Pages
                         }
                     });
 
-
                     SyncMessage.Text = "Image backup successful.";
-                } 
+                }
             }
             catch (Exception ex)
             {
@@ -659,10 +454,9 @@ namespace WT_Transfer.Pages
                 logHelper.Info(logger, ex.ToString());
                 throw;
             }
-
         }
 
-        //保存单张图片
+        // 保存单张图片
         private async void Save_Clicks(object sender, RoutedEventArgs e)
         {
             try
@@ -670,8 +464,6 @@ namespace WT_Transfer.Pages
                 PhotoInfo selectedItem = new PhotoInfo();
                 if (currentModule.Equals("photo"))
                     selectedItem = (PhotoInfo)PhotoGrid.SelectedItem;
-                else if (currentModule.Equals("photoList"))
-                    selectedItem = (PhotoInfo)PhotoListGrid.SelectedItem;
                 else
                     selectedItem = null;
 
@@ -697,10 +489,9 @@ namespace WT_Transfer.Pages
                 filePicker.FileTypeFilter.Add("*");
                 Windows.Storage.StorageFolder storageFolder = await filePicker.PickSingleFolderAsync();
 
-                if (storageFolder!=null)
+                if (storageFolder != null)
                 {
                     string winPath = storageFolder.Path + "\\" + Path.GetFileName(selectedItem.Title);
-
 
                     adbHelper.saveFromPath(musicPath, winPath);
                     ContentDialog appInfoDialog = new ContentDialog
@@ -712,7 +503,7 @@ namespace WT_Transfer.Pages
                     appInfoDialog.XamlRoot = this.Content.XamlRoot;
                     ContentDialogResult re = await appInfoDialog.ShowAsync();
                 }
-                
+
             }
             catch (Exception ex)
             {
@@ -720,10 +511,9 @@ namespace WT_Transfer.Pages
                 logHelper.Info(logger, ex.ToString());
                 throw;
             }
-            
         }
 
-        //设置为壁纸
+        // 设置图片为壁纸
         private async void SetPhotoToWall_Clicks(object sender, RoutedEventArgs e)
         {
             try
@@ -731,8 +521,6 @@ namespace WT_Transfer.Pages
                 PhotoInfo selectedItem = new PhotoInfo();
                 if (currentModule.Equals("photo"))
                     selectedItem = (PhotoInfo)PhotoGrid.SelectedItem;
-                else if (currentModule.Equals("photoList"))
-                    selectedItem = (PhotoInfo)PhotoListGrid.SelectedItem;
                 else
                     selectedItem = null;
 
@@ -771,10 +559,9 @@ namespace WT_Transfer.Pages
                 logHelper.Info(logger, ex.ToString());
                 throw;
             }
-
         }
 
-        //删除操作
+        // 删除操作
         private async void Del_Clicks(object sender, RoutedEventArgs e)
         {
             try
@@ -782,8 +569,6 @@ namespace WT_Transfer.Pages
                 PhotoInfo selectedItem = new PhotoInfo();
                 if (currentModule.Equals("photo"))
                     selectedItem = (PhotoInfo)PhotoGrid.SelectedItem;
-                else if (currentModule.Equals("photoList"))
-                    selectedItem = (PhotoInfo)PhotoListGrid.SelectedItem;
                 else
                     selectedItem = null;
 
@@ -800,17 +585,15 @@ namespace WT_Transfer.Pages
                     ContentDialogResult r = await a.ShowAsync();
                 }
 
-
                 string selectedBucket = "";
                 if (BucketGrid.SelectedItem != null)
                     selectedBucket = BucketGrid.SelectedItem.ToString();
 
-
-                //询问
+                // 询问用户确认删除操作
                 ContentDialog aa = new ContentDialog
                 {
                     Title = "Info",
-                    Content = "Are you sure to delete it ?",
+                    Content = "Are you sure to delete it?",
                     PrimaryButtonText = "OK",
                     SecondaryButtonText = "Cancel",
                 };
@@ -818,8 +601,8 @@ namespace WT_Transfer.Pages
                 ContentDialogResult rr = await aa.ShowAsync();
                 if (rr == ContentDialogResult.Primary)
                 {
-                    //删除操作
-                    //1. 删除目录
+                    // 删除操作
+                    // 1. 删除目录
                     if (!string.IsNullOrEmpty(selectedBucket) && currentModule.Equals("bucket"))
                     {
                         await Task.Run(async () => {
@@ -827,40 +610,28 @@ namespace WT_Transfer.Pages
 
                             foreach (var photo in photoInfos)
                             {
-                                //图片路径
+                                // 删除设备中的图片
                                 string path = photo.Path;
                                 string res = adbHelper.cmdExecuteWithAdbExit("shell rm -r " + path);
-                                //string op = "adb shell am broadcast " +
-                                //"-a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d \'" +
-                                //"file://" + path + "\'";
-                                //res = adbHelper.cmdExecuteWithAdbExit(op);
                                 Result result = socketHelper.getResult("picture", "delete");
                             }
 
                             DispatcherQueue.TryEnqueue(() => {
-                                //删除目录
+                                // 更新UI，删除目录信息
                                 buckets.Remove(selectedBucket);
                                 PhotosInBucket.Remove(selectedBucket);
                                 MainWindow.PhotosInBucket = PhotosInBucket;
                                 MainWindow.buckets = buckets;
 
-                                BucketGrid.ItemsSource = buckets.Take(bucketSize).ToList();
-                                totalPages = (buckets.Count + bucketSize - 1) / bucketSize; // 总页数
-                                currentPage = 1;
-                                pageNum.Text = currentPage + " / " + totalPages;
+                                BucketGrid.ItemsSource = buckets.ToList();
                             });
                         });
                     }
-                    //删除单个图片
+                    // 删除单张图片
                     else
                     {
                         string path = selectedItem.Path;
                         string res = adbHelper.cmdExecuteWithAdbExit("shell rm " + path);
-                        //string op = "adb shell am broadcast " +
-                        //    "-a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d \'" +
-                        //    "file://" + path+"\'";
-                        //res = adbHelper.cmdExecuteWithAdbExit(op);
-
                         Result result = new Result();
                         await Task.Run(() =>
                         {
@@ -869,7 +640,7 @@ namespace WT_Transfer.Pages
 
                         if (result.status.Equals("00"))
                         {
-                            //删除文件
+                            // 删除文件
                             if (currentModule.Equals("photo"))
                             {
                                 List<PhotoInfo> photoInfos = PhotosInBucket[currentBucket];
@@ -877,41 +648,22 @@ namespace WT_Transfer.Pages
                                 currentPhotos.Remove(selectedItem);
                                 PhotosInBucket[currentBucket] = photoInfos;
                                 PhotoGrid.ItemsSource = currentPhotos;
-                                totalPages = (PhotosInBucket[currentBucket].Count + pageSize - 1) / pageSize; // 总页数
-                                pageNum.Text = currentPage + " / " + totalPages;
 
                                 MainWindow.PhotosInBucket = PhotosInBucket;
                             }
-                            else
-                            {
-                                currentPhotos.Remove(selectedItem);
-                                PhotosSorted.Remove(selectedItem);
-                                //删除对应的照片
-                                PhotoListGrid.ItemsSource = PhotosSorted.Take(pageSize).ToList();
-                                //查看Photo在原来list中的位置，同时渲染拉取缩率图，显示缩率图
-                                setPhotoImgPath(PhotosSorted.Take(pageSize).ToList());
-                                totalPages = (PhotosSorted.Count + pageSize - 1) / pageSize; // 总页数
-                                currentPage = 1;
-                                pageNum.Text = currentPage + " / " + totalPages;
-
-                                MainWindow.PhotosSorted = PhotosSorted;
-                            }
-                            
                         }
                         else if (result.status.Equals("101"))
                         {
-                            // 不成功
+                            // 无权限
                             DispatcherQueue.TryEnqueue(() => {
                                 show_error(" No permissions granted.");
                             });
                         }
                         else
                         {
-                            // 修改不成功
+                            // 删除失败
                             show_error("Please check the phone connection and restart the software.");
                         }
-
-                        
                     }
 
                     ContentDialog a = new ContentDialog
@@ -930,22 +682,20 @@ namespace WT_Transfer.Pages
                 logHelper.Info(logger, ex.ToString());
                 throw;
             }
-
         }
 
-        //返回按钮
+        // 返回按钮点击事件处理方法
         private async void BackButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-
+                // 切换到目录视图
                 BucketGrid.Visibility = Visibility.Visible;
                 PhotoGrid.Visibility = Visibility.Collapsed;
                 currentModule = "bucket";
 
-                BucketGrid.ItemsSource = buckets.Take(bucketSize).ToList();
-                totalPages = (buckets.Count + bucketSize - 1) / bucketSize; // 总页数
-                pageNum.Text = currentPage + " / " + totalPages;
+                // 更新分页信息
+                BucketGrid.ItemsSource = albumList.Count == 0? AddAlbumList():albumList;
             }
             catch (Exception ex)
             {
@@ -953,11 +703,10 @@ namespace WT_Transfer.Pages
                 logHelper.Info(logger, ex.ToString());
                 throw;
             }
-
-
         }
 
-        private async void show_info(string title,string content)
+        // 显示信息对话框
+        private async void show_info(string title, string content)
         {
             ContentDialog appErrorDialog = new ContentDialog
             {
@@ -969,55 +718,21 @@ namespace WT_Transfer.Pages
             ContentDialogResult re = await appErrorDialog.ShowAsync();
             if (re == ContentDialogResult.Primary)
             {
-
             }
         }
 
-        private void ListButton_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                PhotoListGrid.Visibility = Visibility.Visible;
-                progressRing.Visibility = Visibility.Collapsed;
-                BucketGrid.Visibility = Visibility.Collapsed;
-                PhotoGrid.Visibility = Visibility.Collapsed;
-                PhotoListGrid.ItemsSource = PhotosSorted.Take(pageSize).ToList();
-                //查看Photo在原来list中的位置，同时渲染拉取缩率图，显示缩率图
-                setPhotoImgPath(PhotosSorted.Take(pageSize).ToList());
-                currentModule = "photoList";
-                totalPages = (Photos.Count + pageSize - 1) / pageSize; // 总页数
-                currentPage = 1;
-                pageNum.Text = currentPage + " / " + totalPages;
 
-                ListButton.FontWeight = FontWeights.Bold;
-                DirectoryButton.FontWeight = FontWeights.Thin;
-            }
-            catch (Exception ex)
-            {
-                show_error(ex.ToString());
-                logHelper.Info(logger, ex.ToString());
-                throw;
-            }
-            
-        }
-
+        // 目录按钮点击事件处理方法
         private void DirectoryButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-
-                PhotoListGrid.Visibility = Visibility.Collapsed;
+                // 切换到目录视图
                 progressRing.Visibility = Visibility.Collapsed;
                 BucketGrid.Visibility = Visibility.Visible;
                 PhotoGrid.Visibility = Visibility.Collapsed;
                 currentModule = "bucket";
 
-                totalPages = (buckets.Count + bucketSize - 1) / bucketSize; // 总页数
-                currentPage = 1;
-                pageNum.Text = currentPage + " / " + totalPages;
-
-                ListButton.FontWeight = FontWeights.Thin;
-                DirectoryButton.FontWeight = FontWeights.Bold;
             }
             catch (Exception ex)
             {
@@ -1025,23 +740,20 @@ namespace WT_Transfer.Pages
                 logHelper.Info(logger, ex.ToString());
                 throw;
             }
-
-
         }
 
-        //双击图片
+        // 双击图片的事件处理方法
         private async void StackPanel_DoubleTapped_1(object sender, DoubleTappedRoutedEventArgs e)
         {
             try
             {
-
                 StackPanel stackPanel = sender as StackPanel;
                 foreach (var child in stackPanel.Children)
                 {
                     // 检查子元素是否为 TextBlock 类型
                     if (child is TextBlock textBlock)
                     {
-                        // 拿到照片名称
+                        // 获取照片路径
                         string path = textBlock.Tag.ToString();
                         string localPath = (string)ApplicationData.Current.LocalSettings.Values[MainWindow.Setting_PhotoBackupPath];
                         string winPath = localPath + "\\image" + "\\" + textBlock.Text;
@@ -1061,23 +773,30 @@ namespace WT_Transfer.Pages
                 logHelper.Info(logger, ex.ToString());
                 throw;
             }
-
         }
 
+        // 显示错误信息对话框
         private async void show_error(string msg)
         {
             ContentDialog appErrorDialog = new ContentDialog
             {
                 Title = "Error",
-                Content = "An error has occured:" + msg,
+                Content = "An error has occurred: " + msg,
                 PrimaryButtonText = "OK",
             };
             appErrorDialog.XamlRoot = this.Content.XamlRoot;
             ContentDialogResult re = await appErrorDialog.ShowAsync();
             if (re == ContentDialogResult.Primary)
             {
-
             }
         }
     }
+
+    public class AlbumInfo
+    {
+        public string Name { get; set; }
+        public string FirstPhotoPath { get; set; }
+        public int PhotoCount { get; set; }
+    }
+
 }

@@ -52,7 +52,9 @@ namespace WT_Transfer
 
         private void CurrentDomain_UnhandledException(object sender, System.UnhandledExceptionEventArgs e)
         {
-            throw new NotImplementedException();
+            Exception ex = e.ExceptionObject as Exception;
+            // 在此处记录异常日志，例如使用NLog
+            LogManager.GetCurrentClassLogger().Error(ex, "Unhandled Exception");
         }
 
         /// <summary>

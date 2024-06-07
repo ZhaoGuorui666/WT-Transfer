@@ -51,97 +51,154 @@
             </StackPanel>
         </DataTemplate>
 
-        <DataTemplate x:Key="PhotosTemplate" x:DataType="Model:PhotoInfo">
-            <StackPanel DoubleTapped="StackPanel_DoubleTapped_1" Orientation="Vertical">
-                <Image
-                    Grid.Row="0"
-                    Width="Auto"
-                    Height="130"
-                    MaxWidth="150"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Top"
-                    Source="{Binding LocalPath}"
-                    Stretch="Fill" />
+        <CollectionViewSource x:Name="cvs" IsSourceGrouped="True" />
+
+        <DataTemplate x:Key="ImageTemplate" x:DataType="Model:PhotoInfo">
+            <StackPanel Width="154" Height="184">
+                <Border
+                    Width="150"
+                    Height="150"
+                    Margin="0">
+                    <Image
+                        Width="150"
+                        Height="150"
+                        Margin="0,0,0,0"
+                        Source="{Binding LocalPath}"
+                        Stretch="UniformToFill" />
+                </Border>
                 <TextBlock
+                    Width="150"
+                    Height="30"
                     HorizontalAlignment="Center"
-                    VerticalAlignment="Top"
-                    Tag="{Binding Path}"
-                    Text="{Binding Title}" />
+                    VerticalAlignment="Bottom"
+                    Text="{Binding Title}"
+                    TextAlignment="Center" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="GroupHeaderTemplate">
+            <StackPanel Orientation="Horizontal">
+                <CheckBox Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked">
+                    <CheckBox.Content>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock
+                                FontSize="16"
+                                FontWeight="Bold"
+                                Text="{Binding Key}" />
+                            <TextBlock FontSize="16" Text=" -  " />
+                            <TextBlock FontSize="16" Text="{Binding PhotoCount}" />
+                            <TextBlock FontSize="16" Text=" items," />
+                            <TextBlock
+                                x:Name="SelectedPhotoCountTextBlock"
+                                FontSize="16"
+                                Text="{Binding SelectedCount}" />
+                            <TextBlock FontSize="16" Text=" Selected" />
+                        </StackPanel>
+                    </CheckBox.Content>
+                </CheckBox>
+
             </StackPanel>
         </DataTemplate>
     </Page.Resources>
 
-    <Grid>
+    <Grid HorizontalAlignment="Stretch" Background="{ThemeResource pageBackground}">
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!--  标题栏  -->
         <StackPanel
             Grid.Row="0"
-            VerticalAlignment="Bottom"
-            Background="AliceBlue"
-            BorderBrush="#f4f4f4"
-            BorderThickness="1"
-            CornerRadius="5"
-            Orientation="Horizontal">
-            <AppBarButton
-                x:Name="BackButton"
-                Click="BackButton_Click"
-                Label="Back">
-                <AppBarButton.Content>
-                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72B;" />
-                </AppBarButton.Content>
-            </AppBarButton>
+            Margin="37,20,20,0"
+            HorizontalAlignment="Stretch"
+            Orientation="Vertical">
+            <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                <TextBlock
+                    x:Name="PageHeader"
+                    Height="50"
+                    Style="{StaticResource TitleTextBlockStyle}"
+                    Text="Music" />
 
-            <AppBarSeparator Margin="12,0,12,0" />
+                <Button
+                    x:Name="HelpBtn"
+                    Margin="10,10,0,15"
+                    BorderThickness="0">
+                    <Image
+                        Width="32"
+                        Height="32"
+                        Source="../Images/icons8-help-32.png" />
+                </Button>
+            </StackPanel>
 
-            <AppBarButton
-                x:Name="SyncFolder"
-                Click="SyncFolder_Click"
-                Label="Sync Folder">
-                <AppBarButton.Content>
-                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE895;" />
-                </AppBarButton.Content>
-            </AppBarButton>
-            <AppBarButton
-                x:Name="SavePhoto"
-                Click="Save_Clicks"
-                Label="Save Photo to PC">
-                <AppBarButton.Content>
-                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEA35;" />
-                </AppBarButton.Content>
-            </AppBarButton>
-            <AppBarButton
-                x:Name="SetPhotoToWall"
-                Click="SetPhotoToWall_Clicks"
-                Label="Set As Wallpaper">
-                <AppBarButton.Content>
-                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8BA;" />
-                </AppBarButton.Content>
-            </AppBarButton>
 
-            <AppBarSeparator Margin="12,0,12,0" />
+            <StackPanel Background="{ThemeResource threeAppBarButtonBackground}" Orientation="Vertical">
+                <StackPanel
+                    VerticalAlignment="Bottom"
+                    Background="{ThemeResource threeAppBarButtonBackground}"
+                    BorderBrush="#f4f4f4"
+                    BorderThickness="1"
+                    CornerRadius="5"
+                    Orientation="Horizontal">
+                    <AppBarButton
+                        x:Name="BackButton"
+                        Click="BackButton_Click"
+                        Label="Back">
+                        <AppBarButton.Content>
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72B;" />
+                        </AppBarButton.Content>
+                    </AppBarButton>
 
-            <AppBarButton
-                x:Name="DelPhoto"
-                Click="Del_Clicks"
-                Label="Delete Selection">
-                <AppBarButton.Content>
-                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE74D;" />
-                </AppBarButton.Content>
-            </AppBarButton>
+                    <AppBarSeparator Margin="12,0,12,0" />
 
-            <InfoBar
-                x:Name="infoBar"
-                Title="Sync process"
-                IsOpen="True"
-                Message=""
-                Severity="Informational"
-                Visibility="Collapsed" />
+                    <AppBarButton
+                        x:Name="SyncFolder"
+                        Click="SyncFolder_Click"
+                        Label="Sync Folder">
+                        <AppBarButton.Content>
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE895;" />
+                        </AppBarButton.Content>
+                    </AppBarButton>
+                    <AppBarButton
+                        x:Name="SavePhoto"
+                        Click="Save_Clicks"
+                        Label="Save Photo to PC">
+                        <AppBarButton.Content>
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEA35;" />
+                        </AppBarButton.Content>
+                    </AppBarButton>
+                    <AppBarButton
+                        x:Name="SetPhotoToWall"
+                        Click="SetPhotoToWall_Clicks"
+                        Label="Set As Wallpaper">
+                        <AppBarButton.Content>
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8BA;" />
+                        </AppBarButton.Content>
+                    </AppBarButton>
+
+                    <AppBarSeparator Margin="12,0,12,0" />
+
+                    <AppBarButton
+                        x:Name="DelPhoto"
+                        Click="Del_Clicks"
+                        Label="Delete Selection">
+                        <AppBarButton.Content>
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE74D;" />
+                        </AppBarButton.Content>
+                    </AppBarButton>
+
+                    <InfoBar
+                        x:Name="infoBar"
+                        Title="Sync process"
+                        IsOpen="True"
+                        Message=""
+                        Severity="Informational"
+                        Visibility="Collapsed" />
+                </StackPanel>
+            </StackPanel>
+
         </StackPanel>
 
         <!--  加载进度条  -->
@@ -171,7 +228,7 @@
             Unable to successfully read data from the phone.
         </TextBlock>
 
-        <ScrollViewer Grid.Row="1">
+        <ScrollViewer Grid.Row="1" Margin="37,0,20,0">
             <StackPanel Orientation="Vertical">
 
                 <GridView
@@ -187,12 +244,26 @@
                     </GridView.ItemContainerStyle>
                 </GridView>
 
-                <controls:AdaptiveGridView
+                <GridView
                     x:Name="PhotoGrid"
-                    DesiredWidth="130"
-                    ItemHeight="150"
-                    ItemTemplate="{StaticResource PhotosTemplate}"
-                    Visibility="Collapsed" />
+                    IsItemClickEnabled="True"
+                    ItemClick="PhotoGrid_ItemClick"
+                    ItemTemplate="{StaticResource ImageTemplate}"
+                    ItemsSource="{Binding Source={StaticResource cvs}}"
+                    SelectionMode="Multiple"
+                    Visibility="Collapsed">
+                    <GridView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <ItemsWrapGrid
+                                MinWidth="250"
+                                MinHeight="300"
+                                Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </GridView.ItemsPanel>
+                    <GridView.GroupStyle>
+                        <GroupStyle HeaderTemplate="{StaticResource GroupHeaderTemplate}" />
+                    </GridView.GroupStyle>
+                </GridView>
             </StackPanel>
         </ScrollViewer>
 

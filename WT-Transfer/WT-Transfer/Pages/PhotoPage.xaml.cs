@@ -33,6 +33,8 @@ using NLog.Fluent;
 using MathNet.Numerics.RootFinding;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Org.BouncyCastle.Asn1.X509;
+using System.ComponentModel;
+using static NPOI.HSSF.Util.HSSFColor;
 
 namespace WT_Transfer.Pages
 {
@@ -63,6 +65,7 @@ namespace WT_Transfer.Pages
 
         //Alubm列表数据
         List<AlbumInfo> albumList = new List<AlbumInfo>();
+        ObservableCollection<GroupInfoList> groupedData;
 
         // 构造函数
         public PhotoPage()
@@ -276,6 +279,7 @@ namespace WT_Transfer.Pages
             }
         }
 
+        // 初始化目录 AlbumList
         private List<AlbumInfo> AddAlbumList()
         {
             foreach (var kv in PhotosInBucket)
@@ -308,7 +312,7 @@ namespace WT_Transfer.Pages
         }
 
         // 双击目录的事件处理方法
-        private void StackPanel_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        private async void StackPanel_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
             try
             {
@@ -324,23 +328,72 @@ namespace WT_Transfer.Pages
                         List<PhotoInfo> photos = new List<PhotoInfo>();
                         if (PhotosInBucket.TryGetValue(bucket, out photos))
                         {
+                            //按照日期分组
+                            groupedData = new ObservableCollection<GroupInfoList>();
+
+                            var groupedPhotos = photos
+                                .GroupBy(p => DateTime.Parse(p.Date).ToString("yyyy-MM-dd"))
+                                .OrderByDescending(g => g.Key);
+
+                            foreach (var group in groupedPhotos)
+                            {
+                                var groupInfoList = new GroupInfoList { Key = group.Key };
+                                groupInfoList.AddRange(group);
+                                groupedData.Add(groupInfoList);
+                            }
+
+
                             // 按时间排序
-                            photos = photos.OrderByDescending(item => item.Date).ToList();
-                            PhotosInBucket[bucket] = photos;
+                            //PhotosInBucket[bucket] = photos;
 
                             // 更新当前模块和分页信息
                             currentModule = "photo";
 
-                            // 切换到照片网格视图
-                            BucketGrid.Visibility = Visibility.Collapsed;
-                            PhotoGrid.Visibility = Visibility.Visible;
 
-                            // 设置照片的缩略图路径
-                            setPhotoImgPath(photos.ToList());
+                            // 显示加载进度条
+                            BucketGrid.Visibility = Visibility.Collapsed;
+                            progressRing.Visibility = Visibility.Visible;
+
+
+                            // 检查是否已经设置了缩略图路径
+                            bool allPhotosHaveLocalPath = photos.Take(10).All(photo => !string.IsNullOrEmpty(photo.LocalPath) && File.Exists(photo.LocalPath));
+
+                            if (!allPhotosHaveLocalPath)
+                            {
+                                // 设置照片的缩略图路径
+                                await Task.Run(() => setPhotoImgPath(photos.ToList()));
+                            }
+
+                            // 切换到照片网格视图
+                            PhotoGrid.Visibility = Visibility.Visible;
+                            // 隐藏加载进度条
+                            progressRing.Visibility = Visibility.Collapsed;
 
                             // 设置数据源
                             currentPhotos = photos.ToList();
-                            PhotoGrid.ItemsSource = photos.ToList();
+
+                            //如果选中之后退出，再次进入之后，把之前选中的图片给设置选中状态
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
+                                foreach (var group in groupedData)
+                                {
+                                    foreach (PhotoInfo p in group)
+                                    {
+                                        if (p.IsSelected == true)
+                                        {
+                                            PhotoGrid.SelectedItems.Add(p);
+                                        }
+                                    }
+                                }
+
+                            });
+
+                            var cvs = new CollectionViewSource
+                            {
+                                IsSourceGrouped = true,
+                                Source = groupedData
+                            };
+                            PhotoGrid.ItemsSource = cvs.View;
                         }
                         else
                         {
@@ -357,8 +410,9 @@ namespace WT_Transfer.Pages
             }
         }
 
+
         // 设置照片的缩略图路径
-        public void setPhotoImgPath(List<PhotoInfo> photos)
+        public async Task setPhotoImgPath(List<PhotoInfo> photos)
         {
             try
             {
@@ -371,7 +425,8 @@ namespace WT_Transfer.Pages
 
                     string localPath =
                         System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./images/pic/" + index + ".jpg")); ;
-                    string str = adbHelper.saveFromPath(phonePath, localPath);
+                    // 异步保存缩略图
+                    await Task.Run(() => adbHelper.saveFromPath(phonePath, localPath));
                     if (File.Exists(localPath))
                     {
                         photo.LocalPath = localPath;
@@ -685,7 +740,7 @@ namespace WT_Transfer.Pages
         }
 
         // 返回按钮点击事件处理方法
-        private async void BackButton_Click(object sender, RoutedEventArgs e)
+        private void BackButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -705,42 +760,6 @@ namespace WT_Transfer.Pages
             }
         }
 
-        // 显示信息对话框
-        private async void show_info(string title, string content)
-        {
-            ContentDialog appErrorDialog = new ContentDialog
-            {
-                Title = title,
-                Content = content,
-                PrimaryButtonText = "OK",
-            };
-            appErrorDialog.XamlRoot = this.Content.XamlRoot;
-            ContentDialogResult re = await appErrorDialog.ShowAsync();
-            if (re == ContentDialogResult.Primary)
-            {
-            }
-        }
-
-
-        // 目录按钮点击事件处理方法
-        private void DirectoryButton_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // 切换到目录视图
-                progressRing.Visibility = Visibility.Collapsed;
-                BucketGrid.Visibility = Visibility.Visible;
-                PhotoGrid.Visibility = Visibility.Collapsed;
-                currentModule = "bucket";
-
-            }
-            catch (Exception ex)
-            {
-                show_error(ex.ToString());
-                logHelper.Info(logger, ex.ToString());
-                throw;
-            }
-        }
 
         // 双击图片的事件处理方法
         private async void StackPanel_DoubleTapped_1(object sender, DoubleTappedRoutedEventArgs e)
@@ -790,6 +809,50 @@ namespace WT_Transfer.Pages
             {
             }
         }
+
+
+        private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkBox && checkBox.DataContext is GroupInfoList groupInfo)
+            {
+                foreach (var photo in groupInfo)
+                {
+                    photo.IsSelected = false;
+
+                }
+
+                PhotoGrid.SelectedItems.Clear();
+            }
+        }
+
+        private void CheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkBox && checkBox.DataContext is GroupInfoList groupInfo)
+            {
+                foreach (var photo in groupInfo)
+                {
+                    photo.IsSelected = true;
+                    PhotoGrid.SelectedItems.Add(photo);
+                }
+            }
+        }
+
+        //选中某项
+        private void PhotoGrid_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            var clickedItem = e.ClickedItem as PhotoInfo;
+            if (clickedItem != null)
+            {
+                clickedItem.IsSelected = !clickedItem.IsSelected;
+
+                // 找到包含该项的组并更新选中数量
+                var parentGroup = groupedData.FirstOrDefault(g => g.Contains(clickedItem));
+                if (parentGroup != null)
+                {
+                    parentGroup.OnPropertyChanged(nameof(parentGroup.SelectedCount));
+                }
+            }
+        }
     }
 
     public class AlbumInfo
@@ -799,4 +862,42 @@ namespace WT_Transfer.Pages
         public int PhotoCount { get; set; }
     }
 
+    public class GroupInfoList : List<PhotoInfo>, INotifyPropertyChanged
+    {
+        public string Key { get; set; }
+
+        public List<PhotoInfo> PhotoInfos { get; set; }
+        public int PhotoCount => this.Count; // 新增属性，返回照片总数
+
+        public int SelectedCount => this.Count(item => item.IsSelected);
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public GroupInfoList()
+        {
+            PhotoInfos = new List<PhotoInfo>();
+        }
+        public void AddRange(IEnumerable<PhotoInfo> collection)
+        {
+            foreach (var item in collection)
+            {
+                item.PropertyChanged += Item_PropertyChanged;
+                base.Add(item);
+            }
+            OnPropertyChanged(nameof(PhotoCount));
+            OnPropertyChanged(nameof(SelectedCount));
+        }
+
+        private void Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PhotoInfo.IsSelected))
+            {
+                OnPropertyChanged(nameof(SelectedCount));
+            }
+        }
+
+        public void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
 }

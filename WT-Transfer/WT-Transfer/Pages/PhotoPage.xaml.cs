@@ -308,7 +308,7 @@ namespace WT_Transfer.Pages
         }
 
         // 双击目录的事件处理方法
-        private void StackPanel_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        private async void StackPanel_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
             try
             {
@@ -331,12 +331,25 @@ namespace WT_Transfer.Pages
                             // 更新当前模块和分页信息
                             currentModule = "photo";
 
-                            // 切换到照片网格视图
-                            BucketGrid.Visibility = Visibility.Collapsed;
-                            PhotoGrid.Visibility = Visibility.Visible;
 
-                            // 设置照片的缩略图路径
-                            setPhotoImgPath(photos.ToList());
+                            // 显示加载进度条
+                            BucketGrid.Visibility = Visibility.Collapsed;
+                            progressRing.Visibility = Visibility.Visible;
+
+
+                            // 检查是否已经设置了缩略图路径
+                            bool allPhotosHaveLocalPath = photos.Take(10).All(photo => !string.IsNullOrEmpty(photo.LocalPath) && File.Exists(photo.LocalPath));
+
+                            if (!allPhotosHaveLocalPath)
+                            {
+                                // 设置照片的缩略图路径
+                                await Task.Run(() => setPhotoImgPath(photos.ToList()));
+                            }
+
+                            // 切换到照片网格视图
+                            PhotoGrid.Visibility = Visibility.Visible;
+                            // 隐藏加载进度条
+                            progressRing.Visibility = Visibility.Collapsed;
 
                             // 设置数据源
                             currentPhotos = photos.ToList();

@@ -20,18 +20,37 @@
 
 
         <DataTemplate x:Key="BucketsTemplate">
-            <StackPanel DoubleTapped="StackPanel_DoubleTapped" Orientation="Vertical">
-                <Image
-                    Grid.Row="0"
-                    Width="100"
-                    Height="100"
+            <StackPanel
+                Width="150"
+                Margin="5"
+                HorizontalAlignment="Center"
+                DoubleTapped="StackPanel_DoubleTapped"
+                Orientation="Vertical">
+                <Border
+                    Width="150"
+                    Height="150"
+                    BorderBrush="Gray"
+                    BorderThickness="1"
+                    CornerRadius="10">
+                    <Image
+                        Width="150"
+                        Height="150"
+                        Source="{Binding FirstPhotoPath}"
+                        Stretch="UniformToFill" />
+                </Border>
+
+                <TextBlock
+                    Margin="0,5,0,0"
                     HorizontalAlignment="Center"
-                    VerticalAlignment="Top"
-                    Source="{Binding FirstPhotoPath}" />
-                <TextBlock HorizontalAlignment="Center" Text="{Binding Name}" />
-                <TextBlock HorizontalAlignment="Center" Text="{Binding PhotoCount, Converter={StaticResource ItemCountConverter}}" />
+                    FontWeight="Bold"
+                    Text="{Binding Name}" />
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    Foreground="Gray"
+                    Text="{Binding PhotoCount, Converter={StaticResource ItemCountConverter}}" />
             </StackPanel>
         </DataTemplate>
+
         <DataTemplate x:Key="PhotosTemplate" x:DataType="Model:PhotoInfo">
             <StackPanel DoubleTapped="StackPanel_DoubleTapped_1" Orientation="Vertical">
                 <Image
@@ -155,12 +174,18 @@
         <ScrollViewer Grid.Row="1">
             <StackPanel Orientation="Vertical">
 
-                <controls:AdaptiveGridView
+                <GridView
                     x:Name="BucketGrid"
-                    DesiredWidth="130"
-                    ItemHeight="150"
+                    Margin="12"
+                    IsItemClickEnabled="True"
                     ItemTemplate="{StaticResource BucketsTemplate}"
-                    Visibility="Collapsed" />
+                    SelectionMode="None">
+                    <GridView.ItemContainerStyle>
+                        <Style TargetType="GridViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </GridView.ItemContainerStyle>
+                </GridView>
 
                 <controls:AdaptiveGridView
                     x:Name="PhotoGrid"

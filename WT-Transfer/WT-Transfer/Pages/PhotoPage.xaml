@@ -8,6 +8,7 @@
     xmlns:Model="using:WT_Transfer.Models"
     xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:helpers="using:WT_Transfer.Helper"
     xmlns:local="using:WT_Transfer.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
@@ -15,18 +16,20 @@
     mc:Ignorable="d">
 
     <Page.Resources>
+        <helpers:CountToStringConverter x:Key="ItemCountConverter" />
+
+
         <DataTemplate x:Key="BucketsTemplate">
             <StackPanel DoubleTapped="StackPanel_DoubleTapped" Orientation="Vertical">
                 <Image
                     Grid.Row="0"
+                    Width="100"
+                    Height="100"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Top"
-                    Source="/Images/folder.jpg"
-                    Stretch="Fill" />
-                <TextBlock
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Top"
-                    Text="{Binding}" />
+                    Source="{Binding FirstPhotoPath}" />
+                <TextBlock HorizontalAlignment="Center" Text="{Binding Name}" />
+                <TextBlock HorizontalAlignment="Center" Text="{Binding PhotoCount, Converter={StaticResource ItemCountConverter}}" />
             </StackPanel>
         </DataTemplate>
         <DataTemplate x:Key="PhotosTemplate" x:DataType="Model:PhotoInfo">

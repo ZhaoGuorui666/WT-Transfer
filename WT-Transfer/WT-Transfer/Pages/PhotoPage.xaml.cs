@@ -61,6 +61,8 @@ namespace WT_Transfer.Pages
         string currentModule = "bucket";
         List<PhotoInfo> currentPhotos = new List<PhotoInfo>();
 
+        //Alubm列表数据
+        List<AlbumInfo> albumList = new List<AlbumInfo>();
 
         // 构造函数
         public PhotoPage()
@@ -122,7 +124,7 @@ namespace WT_Transfer.Pages
             PhotosSorted = MainWindow.PhotosSorted;
 
             // 设置目录网格的数据源并更新分页信息
-            BucketGrid.ItemsSource = buckets.ToList();
+            BucketGrid.ItemsSource = PhotosInBucket;
 
             // 隐藏进度环并显示目录网格
             progressRing.Visibility = Visibility.Collapsed;
@@ -228,13 +230,23 @@ namespace WT_Transfer.Pages
                             MainWindow.Photos = Photos;
                             MainWindow.PhotosSorted = PhotosSorted;
                             MainWindow.PhotosInBucket = PhotosInBucket;
+                            AddAlbumList();
+
 
                             // 更新界面
-                            DispatcherQueue.TryEnqueue(() => {
-                                BucketGrid.ItemsSource = buckets.ToList();
-
-                                progressRing.Visibility = Visibility.Collapsed;
-                                BucketGrid.Visibility = Visibility.Visible;
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
+                                try
+                                {
+                                    BucketGrid.ItemsSource = albumList;
+                                    progressRing.Visibility = Visibility.Collapsed;
+                                    BucketGrid.Visibility = Visibility.Visible;
+                                }
+                                catch (Exception ex)
+                                {
+                                    show_error("Error updating UI: " + ex.Message);
+                                    logHelper.Info(logger, ex.ToString());
+                                }
                             });
                         }
                     }
@@ -262,6 +274,37 @@ namespace WT_Transfer.Pages
                 logHelper.Info(logger, ex.ToString());
                 throw;
             }
+        }
+
+        private List<AlbumInfo> AddAlbumList()
+        {
+            foreach (var kv in PhotosInBucket)
+            {
+                List<PhotoInfo> photos = new List<PhotoInfo>();
+                photos.Add(kv.Value.First());
+                setPhotoImgPath(photos);
+                if (kv.Value.Count > 0)
+                {
+                    var firstPhotoPath = kv.Value.First().LocalPath;
+                    albumList.Add(new AlbumInfo
+                    {
+                        Name = kv.Key,
+                        FirstPhotoPath = firstPhotoPath,
+                        PhotoCount = kv.Value.Count
+                    });
+                }
+                else
+                {
+                    albumList.Add(new AlbumInfo
+                    {
+                        Name = kv.Key,
+                        FirstPhotoPath = "/Images/folder.jpg", // 默认封面图片
+                        PhotoCount = 0
+                    });
+                }
+            }
+
+            return albumList;
         }
 
         // 双击目录的事件处理方法
@@ -652,7 +695,7 @@ namespace WT_Transfer.Pages
                 currentModule = "bucket";
 
                 // 更新分页信息
-                BucketGrid.ItemsSource = buckets.ToList();
+                BucketGrid.ItemsSource = albumList.Count == 0? AddAlbumList():albumList;
             }
             catch (Exception ex)
             {
@@ -748,4 +791,12 @@ namespace WT_Transfer.Pages
             }
         }
     }
+
+    public class AlbumInfo
+    {
+        public string Name { get; set; }
+        public string FirstPhotoPath { get; set; }
+        public int PhotoCount { get; set; }
+    }
+
 }

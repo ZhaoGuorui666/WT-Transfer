@@ -120,7 +120,7 @@
                     x:Name="PageHeader"
                     Height="50"
                     Style="{StaticResource TitleTextBlockStyle}"
-                    Text="Music" />
+                    Text="Photos" />
 
                 <Button
                     x:Name="HelpBtn"
@@ -252,14 +252,6 @@
                     ItemsSource="{Binding Source={StaticResource cvs}}"
                     SelectionMode="Multiple"
                     Visibility="Collapsed">
-                    <GridView.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <ItemsWrapGrid
-                                MinWidth="250"
-                                MinHeight="300"
-                                Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </GridView.ItemsPanel>
                     <GridView.GroupStyle>
                         <GroupStyle HeaderTemplate="{StaticResource GroupHeaderTemplate}" />
                     </GridView.GroupStyle>

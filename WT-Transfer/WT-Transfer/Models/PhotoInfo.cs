@@ -8,13 +8,25 @@ using System.Threading.Tasks;
 
 namespace WT_Transfer.Models
 {
-    public class PhotoInfo
+    public class PhotoInfo : INotifyPropertyChanged
     {
         public string Bucket { get; set; }
         public string Date { get; set; }
         public string Path { get; set; }
         public string Title { get; set; }
-        public string LocalPath { get; set; }
+        private string localPath;
+        public string LocalPath
+        {
+            get { return localPath; }
+            set
+            {
+                if (localPath != value)
+                {
+                    localPath = value;
+                    OnPropertyChanged(nameof(LocalPath));
+                }
+            }
+        }
 
         public void getTitle()
         {

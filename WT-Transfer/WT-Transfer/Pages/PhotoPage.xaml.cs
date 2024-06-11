@@ -70,10 +70,18 @@ namespace WT_Transfer.Pages
         // 构造函数
         public PhotoPage()
         {
-            this.InitializeComponent();
+            try
+            {
+                this.InitializeComponent();
 
-            // 页面加载时调用 LoadingPage_Loaded 方法
-            this.Loaded += LoadingPage_Loaded;
+                // 页面加载时调用 LoadingPage_Loaded 方法
+                this.Loaded += LoadingPage_Loaded;
+            }catch (Exception ex)
+            {
+                show_error(ex.ToString());
+                logHelper.Info(logger, ex.ToString());
+                throw;
+            }
         }
 
         // 页面加载完成后的处理方法
@@ -233,9 +241,30 @@ namespace WT_Transfer.Pages
                             MainWindow.Photos = Photos;
                             MainWindow.PhotosSorted = PhotosSorted;
                             MainWindow.PhotosInBucket = PhotosInBucket;
+
+                            //异步线程将缩率图传输到电脑端
+                            Task.Run(() =>
+                            {
+                                string phonePath =
+                        "/storage/emulated/0/Android/data/com.example.contacts/files/Download/pic";
+
+                                string localPath =
+                                    System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./images"));
+
+                                adbHelper.savePathFromPath(phonePath, localPath);
+                            });
+                            int count = 0;
+                            foreach (var photo in Photos)
+                            {
+                                // 设置缩略图路径
+                                string localPath =
+                                    System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./images/pic/" + count++ + ".jpg")); ;
+
+                                photo.LocalPath = localPath;
+                            }
+
+
                             AddAlbumList();
-
-
                             // 更新界面
                             DispatcherQueue.TryEnqueue(() =>
                             {
@@ -349,10 +378,12 @@ namespace WT_Transfer.Pages
                             // 更新当前模块和分页信息
                             currentModule = "photo";
 
+                            DispatcherQueue.TryEnqueue(() => {
 
-                            // 显示加载进度条
-                            BucketGrid.Visibility = Visibility.Collapsed;
-                            progressRing.Visibility = Visibility.Visible;
+                                // 显示加载进度条
+                                BucketGrid.Visibility = Visibility.Collapsed;
+                                progressRing.Visibility = Visibility.Visible;
+                            });
 
 
                             // 检查是否已经设置了缩略图路径
@@ -361,18 +392,22 @@ namespace WT_Transfer.Pages
                             if (!allPhotosHaveLocalPath)
                             {
                                 // 设置照片的缩略图路径
-                                await Task.Run(() => setPhotoImgPath(photos.ToList()));
+                                //await Task.Run(() => setPhotoImgPath(photos.ToList()));
                             }
 
-                            // 切换到照片网格视图
-                            PhotoGrid.Visibility = Visibility.Visible;
-                            // 隐藏加载进度条
-                            progressRing.Visibility = Visibility.Collapsed;
+
+                            DispatcherQueue.TryEnqueue(() => {
+                                // 切换到照片网格视图
+                                PhotoGrid.Visibility = Visibility.Visible;
+                                // 隐藏加载进度条
+                                progressRing.Visibility = Visibility.Collapsed;
+                            });
 
                             // 设置数据源
-                            currentPhotos = photos.ToList();
+                            //currentPhotos = photos.ToList();
 
                             //如果选中之后退出，再次进入之后，把之前选中的图片给设置选中状态
+                            
                             DispatcherQueue.TryEnqueue(() =>
                             {
                                 foreach (var group in groupedData)
@@ -386,9 +421,8 @@ namespace WT_Transfer.Pages
                                     }
                                 }
 
-                            });
-
-                            var cvs = new CollectionViewSource
+                             });
+                             var cvs = new CollectionViewSource
                             {
                                 IsSourceGrouped = true,
                                 Source = groupedData
@@ -408,6 +442,38 @@ namespace WT_Transfer.Pages
                 logHelper.Info(logger, ex.ToString());
                 throw;
             }
+        }
+
+        private ObservableCollection<GroupInfoList> GenerateGroupedData()
+        {
+            string imageDirectory = @"D:\BaiduNetdiskDownload\val2017";
+            string thumbnailDirectory = Path.Combine(imageDirectory, "thumbnails");
+
+            var groupedData = new ObservableCollection<GroupInfoList>();
+
+            for (int i = 0; i < 1000; i += 50)
+            {
+                var group = new GroupInfoList() { Key = $"Group {i / 50 + 1}" };
+
+                for (int j = 1; j <= 50; j++)
+                {
+                    string imageName = $"Image{j + i}.jpg";
+                    string imagePath = Path.Combine(imageDirectory, imageName);
+                    string thumbnailPath = Path.Combine(thumbnailDirectory, imageName);
+
+                    PhotoInfo image = new PhotoInfo
+                    {
+                        Title = imagePath,
+                        LocalPath = thumbnailPath
+                    };
+
+                    group.Add(image);
+                }
+
+                groupedData.Add(group);
+            }
+
+            return groupedData;
         }
 
 

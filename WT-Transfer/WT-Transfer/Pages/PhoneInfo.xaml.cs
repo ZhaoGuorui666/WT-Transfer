@@ -11,6 +11,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using NLog;
+using Org.BouncyCastle.Asn1.X509;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,6 +24,7 @@ using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Media.Protection.PlayReady;
 using WT_Transfer.Helper;
+using WT_Transfer.SocketModels;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -72,7 +74,14 @@ namespace WT_Transfer.Pages
                 Resolution = size.Substring(colonIndex + 1).Trim();
 
 
+                //启动获取图片，主要是为了让手机开始生成缩率图
 
+                Result result = new Result();
+                SocketHelper helper = new SocketHelper();
+                Task.Run(() =>
+                {
+                    result = helper.getResult("picture", "query");
+                });
             }
             catch (Exception ex)
             {

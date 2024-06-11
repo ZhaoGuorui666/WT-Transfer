@@ -67,6 +67,9 @@ namespace WT_Transfer.Pages
         List<AlbumInfo> albumList = new List<AlbumInfo>();
         ObservableCollection<GroupInfoList> groupedData;
 
+        //当前目录
+        private string currentDirectory = "/Pictures/";
+
         // 构造函数
         public PhotoPage()
         {
@@ -74,6 +77,7 @@ namespace WT_Transfer.Pages
             {
                 this.InitializeComponent();
 
+                CurrentDirectoryTextBox.Text = currentDirectory;
                 // 页面加载时调用 LoadingPage_Loaded 方法
                 this.Loaded += LoadingPage_Loaded;
             }catch (Exception ex)
@@ -353,10 +357,14 @@ namespace WT_Transfer.Pages
                     {
                         // 获取目录名称
                         string bucket = textBlock.Text;
-                        currentBucket = bucket;
                         List<PhotoInfo> photos = new List<PhotoInfo>();
                         if (PhotosInBucket.TryGetValue(bucket, out photos))
                         {
+                            // 更新当前目录
+                            currentBucket = bucket;
+                            currentDirectory = $"/Pictures/{bucket}"; 
+                            CurrentDirectoryTextBox.Text = currentDirectory;
+
                             //按照日期分组
                             groupedData = new ObservableCollection<GroupInfoList>();
 
@@ -817,6 +825,12 @@ namespace WT_Transfer.Pages
 
                 // 更新分页信息
                 BucketGrid.ItemsSource = albumList.Count == 0? AddAlbumList():albumList;
+
+                // 更新当前目录显示
+                //CurrentDirectoryTextBlock.Text = "Current Bucket: " + currentBucket;
+                currentDirectory = "/Pictures"; 
+                CurrentDirectoryTextBox.Text = currentDirectory;
+
             }
             catch (Exception ex)
             {

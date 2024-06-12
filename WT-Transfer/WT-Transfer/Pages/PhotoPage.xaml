@@ -1,4 +1,4 @@
-<!--  Copyright (c) Microsoft Corporation and Contributors.  -->
+ï»¿<!--  Copyright (c) Microsoft Corporation and Contributors.  -->
 <!--  Licensed under the MIT License.  -->
 
 <Page
@@ -109,7 +109,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!--  ±êÌâÀ¸  -->
+        <!--  æ ‡é¢˜æ   -->
         <StackPanel
             Grid.Row="0"
             Margin="37,20,20,0"
@@ -144,22 +144,33 @@
                     Orientation="Horizontal">
 
 
-                    <AppBarButton
-                        x:Name="SyncFolder"
-                        Click="SyncFolder_Click"
-                        Label="Sync Folder">
+                    <AppBarButton x:Name="SyncFolder" Label="Export to PC">
                         <AppBarButton.Content>
-                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE895;" />
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE896;" />
                         </AppBarButton.Content>
+                        <AppBarButton.Flyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem Click="ExportAllPhotos_Click" Text="Export All Photos" />
+                                <MenuFlyoutItem Click="ExportSelectedPhotos_Click" Text="Export Selected Photos" />
+                            </MenuFlyout>
+                        </AppBarButton.Flyout>
                     </AppBarButton>
-                    <AppBarButton
-                        x:Name="SavePhoto"
-                        Click="Save_Clicks"
-                        Label="Save Photo to PC">
+
+                    <AppBarButton x:Name="SavePhoto" Label="Import to Android">
                         <AppBarButton.Content>
-                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEA35;" />
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE898;" />
                         </AppBarButton.Content>
+                        <AppBarButton.Flyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem Click="ImportPhotos_Click" Text="Select Files" />
+                                <MenuFlyoutItem Click="ImportFolder_Click" Text="Select Folder" />
+                            </MenuFlyout>
+                        </AppBarButton.Flyout>
                     </AppBarButton>
+
+                    <AppBarSeparator Margin="12,0,12,0" />
+
+                    <!--
                     <AppBarButton
                         x:Name="SetPhotoToWall"
                         Click="SetPhotoToWall_Clicks"
@@ -168,15 +179,24 @@
                             <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8BA;" />
                         </AppBarButton.Content>
                     </AppBarButton>
+                    -->
 
-                    <AppBarSeparator Margin="12,0,12,0" />
 
                     <AppBarButton
                         x:Name="DelPhoto"
                         Click="Del_Clicks"
-                        Label="Delete Selection">
+                        Label="Delete">
                         <AppBarButton.Content>
                             <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE74D;" />
+                        </AppBarButton.Content>
+                    </AppBarButton>
+
+
+                    <AppBarButton
+                        x:Name="Refresh"
+                        Label="Refresh">
+                        <AppBarButton.Content>
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72C;" />
                         </AppBarButton.Content>
                     </AppBarButton>
 
@@ -189,29 +209,138 @@
                         Visibility="Collapsed" />
                 </StackPanel>
 
-                <StackPanel Orientation="Horizontal">
-                    <Button x:Name="BackButton" Click="BackButton_Click">
-                        <FontIcon Glyph="&#xf0d3;" />
-                    </Button>
-                    <TextBox
-                        x:Name="CurrentDirectoryTextBox"
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <Button x:Name="BackButton" Click="BackButton_Click">
+                            <FontIcon Glyph="&#xf0d3;" />
+                        </Button>
+                        <TextBox
+                            x:Name="CurrentDirectoryTextBox"
+                            Width="200"
+                            Margin="0,0,0,0"
+                            IsReadOnly="True"
+                            Text="/Pictures/" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button
+                            x:Name="SortButton2"
+                            Margin="10,0,0,0"
+                            Click="SortButton2_Click"
+                            Content="Time Created">
+                            <Button.Flyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutSubItem x:Name="SortBySubItem" Text="Sort By">
+                                        <ToggleMenuFlyoutItem
+                                            x:Name="SortByTimeCreated"
+                                            Click="SortByTimeCreated_Click"
+                                            IsChecked="True"
+                                            Text="Time Created" />
+                                        <ToggleMenuFlyoutItem
+                                            x:Name="SortByFileSize"
+                                            Click="SortByFileSize_Click"
+                                            Text="File Size" />
+                                    </MenuFlyoutSubItem>
+                                    <MenuFlyoutSubItem x:Name="OrderSubItem" Text="Order">
+                                        <ToggleMenuFlyoutItem
+                                            x:Name="SortAscending"
+                                            Click="SortAscending_Click"
+                                            Text="Ascending" />
+                                        <ToggleMenuFlyoutItem
+                                            x:Name="SortDescending"
+                                            Click="SortDescending_Click"
+                                            IsChecked="True"
+                                            Text="Descending" />
+                                    </MenuFlyoutSubItem>
+                                </MenuFlyout>
+                            </Button.Flyout>
+                        </Button>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <Button
+                            x:Name="TimeRangeButton"
+                            Margin="10,0,0,0"
+                            Content="Time Range">
+                            <Button.Flyout>
+                                <MenuFlyout>
+                                    <ToggleMenuFlyoutItem
+                                        x:Name="AllTime"
+                                        Click="FilterByAllTime_Click"
+                                        Text="All Time" />
+                                    <ToggleMenuFlyoutItem
+                                        x:Name="ThisWeek"
+                                        Click="FilterByThisWeek_Click"
+                                        Text="This Week" />
+                                    <ToggleMenuFlyoutItem
+                                        x:Name="ThisMonth"
+                                        Click="FilterByThisMonth_Click"
+                                        Text="This Month" />
+                                    <ToggleMenuFlyoutItem
+                                        x:Name="LastMonth"
+                                        Click="FilterByLastMonth_Click"
+                                        Text="Last Month" />
+                                    <ToggleMenuFlyoutItem
+                                        x:Name="Last3Months"
+                                        Click="FilterByLast3Months_Click"
+                                        Text="Last 3 Months" />
+                                    <ToggleMenuFlyoutItem
+                                        x:Name="Last6Months"
+                                        Click="FilterByLast6Months_Click"
+                                        Text="Last 6 Months" />
+                                    <ToggleMenuFlyoutItem
+                                        x:Name="ThisYear"
+                                        Click="FilterByThisYear_Click"
+                                        Text="This Year" />
+                                </MenuFlyout>
+                            </Button.Flyout>
+                        </Button>
+                    </StackPanel>
+
+                    <StackPanel
+                        Grid.Column="3"
+                        HorizontalAlignment="Right"
+                        Orientation="Horizontal">
+                        <CalendarDatePicker
+                            x:Name="StartDatePicker"
+                            DateChanged="DatePicker_DateChanged"
+                            PlaceholderText="start" />
+                        <TextBlock
+                            Margin="3,0"
+                            VerticalAlignment="Center"
+                            Text=" - " />
+                        <CalendarDatePicker
+                            x:Name="EndDatePicker"
+                            DateChanged="DatePicker_DateChanged"
+                            PlaceholderText="end" />
+                    </StackPanel>
+
+                    <ProgressBar
+                        x:Name="ExportProgressBar"
                         Width="200"
-                        Margin="0,0,0,0"
-                        IsReadOnly="True"
-                        Text="/Pictures/" />
+                        Height="20"
+                        Margin="20,0,0,0"
+                        Maximum="100"
+                        Minimum="0"
+                        Visibility="Collapsed" />
+                    <TextBlock
+                        x:Name="ExportProgressText"
+                        Margin="10,0,0,0"
+                        Visibility="Collapsed" />
 
-
-                    <Image
-                        Width="32"
-                        Height="32"
-                        Source="../Images/icons8-ascending-sorting-24.png" />
-
-                </StackPanel>
+                </Grid>
             </StackPanel>
 
         </StackPanel>
 
-        <!--  ¼ÓÔØ½ø¶ÈÌõ  -->
+        <!--  åŠ è½½è¿›åº¦æ¡  -->
         <StackPanel
             x:Name="progressRing"
             Grid.Row="1"
@@ -225,7 +354,7 @@
             <TextBlock Margin="14,12,0,0" Text="Loading..." />
         </StackPanel>
 
-        <!--  ¶ÁÈ¡²»µ½pathµÄÏÔÊ¾ÐÅÏ¢  -->
+        <!--  è¯»å–ä¸åˆ°pathçš„æ˜¾ç¤ºä¿¡æ¯  -->
         <TextBlock
             x:Name="NoDataText"
             Grid.Row="1"
@@ -269,7 +398,7 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!--  È¨ÏÞµ¯´°  -->
+        <!--  æƒé™å¼¹çª—  -->
         <ContentDialog
             x:Name="permission"
             Title="No permission"
@@ -280,7 +409,7 @@
             </TextBlock>
         </ContentDialog>
 
-        <!--  Í¬²½Í¼Æ¬µ¯´°  -->
+        <!--  åŒæ­¥å›¾ç‰‡å¼¹çª—  -->
         <ContentDialog
             x:Name="SyncPhoto"
             Title="Sync Info"
@@ -289,7 +418,7 @@
             <TextBlock x:Name="SyncMessage" />
         </ContentDialog>
 
-        <!--  Ë«»÷Í¼Æ¬µ¯´°  -->
+        <!--  åŒå‡»å›¾ç‰‡å¼¹çª—  -->
         <ContentDialog
             x:Name="ShowPhoto"
             Title="Photo"

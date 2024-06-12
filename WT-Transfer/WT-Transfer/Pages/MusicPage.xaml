@@ -125,14 +125,20 @@
                     <StackPanel Orientation="Horizontal">
 
                         <AppBarButton
-                            x:Name="PullMusic"
-                            Margin="20,0,0,0"
-                            Click="PullMusic_Click"
-                            Label="Export to PC">
-                            <AppBarButton.Content>
-                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xe896;" />
-                            </AppBarButton.Content>
+                            x:Name="ExportButton"
+                            Margin="10"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Click="ExportButton_Click"
+                            Content="Export to PC">
+                            <AppBarButton.Flyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem Click="ExportAllPhotos_Click" Text="导出所有照片" />
+                                    <MenuFlyoutItem Click="ExportSelectedPhotos_Click" Text="导出选中的照片" />
+                                </MenuFlyout>
+                            </AppBarButton.Flyout>
                         </AppBarButton>
+
                         <AppBarButton
                             x:Name="PushMusic"
                             Margin="12,0,0,0"

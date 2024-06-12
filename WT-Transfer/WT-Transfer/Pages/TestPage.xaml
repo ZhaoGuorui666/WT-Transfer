@@ -1,0 +1,61 @@
+<!--  Copyright (c) Microsoft Corporation and Contributors.  -->
+<!--  Licensed under the MIT License.  -->
+
+<Page
+    x:Class="WT_Transfer.Pages.TestPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:WT_Transfer.Pages"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:WT_Transfer.Models"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <CollectionViewSource x:Name="cvs" IsSourceGrouped="True" />
+        <DataTemplate x:Key="ImageTemplate" x:DataType="models:CustomDataObject">
+            <StackPanel>
+                <Image
+                    Width="100"
+                    Height="100"
+                    Source="{x:Bind ImageLocation}" />
+                <TextBlock Text="{x:Bind Title}" />
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="GroupHeaderTemplate">
+            <StackPanel>
+                <TextBlock
+                    FontSize="24"
+                    FontWeight="Bold"
+                    Text="{Binding Key}" />
+                <TextBlock FontSize="16" Text="{Binding PhotoCount}" />
+                <TextBlock
+                    x:Name="SelectedPhotoCountTextBlock"
+                    Margin="10"
+                    FontSize="16"
+                    Text="{Binding SelectedCount}" />
+            </StackPanel>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid>
+        <GridView
+            x:Name="SwappableSelectionModesItemsView"
+            IsItemClickEnabled="True"
+            ItemClick="SwappableSelectionModesItemsView_ItemClick"
+            ItemTemplate="{StaticResource ImageTemplate}"
+            ItemsSource="{Binding Source={StaticResource cvs}}"
+            SelectionMode="Multiple">
+            <GridView.GroupStyle>
+                <GroupStyle HeaderTemplate="{StaticResource GroupHeaderTemplate}">
+                    <GroupStyle.Panel>
+                        <ItemsPanelTemplate>
+                            <ItemsWrapGrid MaximumRowsOrColumns="20" Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </GroupStyle.Panel>
+                </GroupStyle>
+            </GridView.GroupStyle>
+        </GridView>
+    </Grid>
+</Page>

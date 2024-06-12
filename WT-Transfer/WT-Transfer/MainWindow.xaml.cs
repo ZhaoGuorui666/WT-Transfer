@@ -298,6 +298,7 @@ namespace WT_Transfer
                 else if ((string)selectedItem.Tag == "Photo") contentFrame.Navigate(typeof(PhotoPage));
                 else if ((string)selectedItem.Tag == "Apps") contentFrame.Navigate(typeof(AppPage));
                 else if ((string)selectedItem.Tag == "BackupSettings") contentFrame.Navigate(typeof(BackupSetting));
+                else if ((string)selectedItem.Tag == "test") contentFrame.Navigate(typeof(TestPage));
             }
             catch (Exception ex)
             {

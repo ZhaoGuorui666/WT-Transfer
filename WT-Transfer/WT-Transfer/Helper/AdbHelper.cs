@@ -103,6 +103,16 @@ namespace WT_Transfer.Helper
             return res;
         }
 
+        public string savePathFromPath(string phonePath, string winPath)
+        {
+            string str = System.IO.Path.GetFullPath(winPath);
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(winPath));
+
+            string command = "pull \"" + "/" + phonePath + "\"" + " \"" + winPath + "\"";
+            string res = cmdExecuteWithAdb(command) + "\n";
+            return res;
+        }
+
         // 电脑传输到手机
         public string importFromPath(string winPath, string phonePath)
         {

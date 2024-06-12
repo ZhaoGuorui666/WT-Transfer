@@ -67,13 +67,26 @@ namespace WT_Transfer.Pages
         List<AlbumInfo> albumList = new List<AlbumInfo>();
         ObservableCollection<GroupInfoList> groupedData;
 
+        //当前目录
+        private string currentDirectory = "/Pictures/";
+
         // 构造函数
         public PhotoPage()
         {
-            this.InitializeComponent();
+            try
+            {
+                this.InitializeComponent();
 
-            // 页面加载时调用 LoadingPage_Loaded 方法
-            this.Loaded += LoadingPage_Loaded;
+                CurrentDirectoryTextBox.Text = currentDirectory;
+                // 页面加载时调用 LoadingPage_Loaded 方法
+                this.Loaded += LoadingPage_Loaded;
+            }
+            catch (Exception ex)
+            {
+                show_error(ex.ToString());
+                logHelper.Info(logger, ex.ToString());
+                throw;
+            }
         }
 
         // 页面加载完成后的处理方法
@@ -147,7 +160,8 @@ namespace WT_Transfer.Pages
                     MainWindow.Permissions[4] = '1';
                 }
 
-                await Task.Run(async () => {
+                await Task.Run(async () =>
+                {
                     PhotosInBucket = new Dictionary<string, List<PhotoInfo>>();
 
                     SocketHelper helper = new SocketHelper();
@@ -233,9 +247,30 @@ namespace WT_Transfer.Pages
                             MainWindow.Photos = Photos;
                             MainWindow.PhotosSorted = PhotosSorted;
                             MainWindow.PhotosInBucket = PhotosInBucket;
+
+                            //异步线程将缩率图传输到电脑端
+                            Task.Run(() =>
+                            {
+                                string phonePath =
+                        "/storage/emulated/0/Android/data/com.example.contacts/files/Download/pic";
+
+                                string localPath =
+                                    System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./images"));
+
+                                adbHelper.savePathFromPath(phonePath, localPath);
+                            });
+                            int count = 0;
+                            foreach (var photo in Photos)
+                            {
+                                // 设置缩略图路径
+                                string localPath =
+                                    System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./images/pic/" + count++ + ".jpg")); ;
+
+                                photo.LocalPath = localPath;
+                            }
+
+
                             AddAlbumList();
-
-
                             // 更新界面
                             DispatcherQueue.TryEnqueue(() =>
                             {
@@ -256,7 +291,8 @@ namespace WT_Transfer.Pages
                     else if (result.status.Equals("101"))
                     {
                         // 无权限
-                        DispatcherQueue.TryEnqueue(() => {
+                        DispatcherQueue.TryEnqueue(() =>
+                        {
                             permission.Hide();
                             show_error(" No permissions granted.");
 
@@ -324,10 +360,14 @@ namespace WT_Transfer.Pages
                     {
                         // 获取目录名称
                         string bucket = textBlock.Text;
-                        currentBucket = bucket;
                         List<PhotoInfo> photos = new List<PhotoInfo>();
                         if (PhotosInBucket.TryGetValue(bucket, out photos))
                         {
+                            // 更新当前目录
+                            currentBucket = bucket;
+                            currentDirectory = $"/Pictures/{bucket}";
+                            CurrentDirectoryTextBox.Text = currentDirectory;
+
                             //按照日期分组
                             groupedData = new ObservableCollection<GroupInfoList>();
 
@@ -349,10 +389,13 @@ namespace WT_Transfer.Pages
                             // 更新当前模块和分页信息
                             currentModule = "photo";
 
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
 
-                            // 显示加载进度条
-                            BucketGrid.Visibility = Visibility.Collapsed;
-                            progressRing.Visibility = Visibility.Visible;
+                                // 显示加载进度条
+                                BucketGrid.Visibility = Visibility.Collapsed;
+                                progressRing.Visibility = Visibility.Visible;
+                            });
 
 
                             // 检查是否已经设置了缩略图路径
@@ -361,18 +404,23 @@ namespace WT_Transfer.Pages
                             if (!allPhotosHaveLocalPath)
                             {
                                 // 设置照片的缩略图路径
-                                await Task.Run(() => setPhotoImgPath(photos.ToList()));
+                                //await Task.Run(() => setPhotoImgPath(photos.ToList()));
                             }
 
-                            // 切换到照片网格视图
-                            PhotoGrid.Visibility = Visibility.Visible;
-                            // 隐藏加载进度条
-                            progressRing.Visibility = Visibility.Collapsed;
+
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
+                                // 切换到照片网格视图
+                                PhotoGrid.Visibility = Visibility.Visible;
+                                // 隐藏加载进度条
+                                progressRing.Visibility = Visibility.Collapsed;
+                            });
 
                             // 设置数据源
-                            currentPhotos = photos.ToList();
+                            //currentPhotos = photos.ToList();
 
                             //如果选中之后退出，再次进入之后，把之前选中的图片给设置选中状态
+
                             DispatcherQueue.TryEnqueue(() =>
                             {
                                 foreach (var group in groupedData)
@@ -387,7 +435,6 @@ namespace WT_Transfer.Pages
                                 }
 
                             });
-
                             var cvs = new CollectionViewSource
                             {
                                 IsSourceGrouped = true,
@@ -408,6 +455,38 @@ namespace WT_Transfer.Pages
                 logHelper.Info(logger, ex.ToString());
                 throw;
             }
+        }
+
+        private ObservableCollection<GroupInfoList> GenerateGroupedData()
+        {
+            string imageDirectory = @"D:\BaiduNetdiskDownload\val2017";
+            string thumbnailDirectory = Path.Combine(imageDirectory, "thumbnails");
+
+            var groupedData = new ObservableCollection<GroupInfoList>();
+
+            for (int i = 0; i < 1000; i += 50)
+            {
+                var group = new GroupInfoList() { Key = $"Group {i / 50 + 1}" };
+
+                for (int j = 1; j <= 50; j++)
+                {
+                    string imageName = $"Image{j + i}.jpg";
+                    string imagePath = Path.Combine(imageDirectory, imageName);
+                    string thumbnailPath = Path.Combine(thumbnailDirectory, imageName);
+
+                    PhotoInfo image = new PhotoInfo
+                    {
+                        Title = imagePath,
+                        LocalPath = thumbnailPath
+                    };
+
+                    group.Add(image);
+                }
+
+                groupedData.Add(group);
+            }
+
+            return groupedData;
         }
 
 
@@ -493,7 +572,8 @@ namespace WT_Transfer.Pages
                             string winPath = localPath + "\\" + selectedItem + "\\" + photo.Title;
 
                             adbHelper.saveFromPath(path, winPath);
-                            DispatcherQueue.TryEnqueue(() => {
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
                                 //infoBar.Message = "Currently backing up: " + photo.Title;
                                 SyncMessage.Text = "Currently backing up: " + photo.Title;
                             });
@@ -568,6 +648,113 @@ namespace WT_Transfer.Pages
             }
         }
 
+        private async void ImportPhotos_Click(object sender, RoutedEventArgs e)
+        {
+            var picker = new FileOpenPicker();
+            var hWnd = MainWindow.WindowHandle;
+            InitializeWithWindow.Initialize(picker, hWnd);
+            picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
+            picker.FileTypeFilter.Add(".jpg");
+            picker.FileTypeFilter.Add(".png");
+            picker.FileTypeFilter.Add(".jpeg");
+            picker.FileTypeFilter.Add(".bmp");
+
+            var files = await picker.PickMultipleFilesAsync();
+            if (files != null)
+            {
+                await ImportFilesToAndroid(files);
+            }
+        }
+
+        private async void ImportFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var picker = new FolderPicker();
+            var hWnd = MainWindow.WindowHandle;
+            InitializeWithWindow.Initialize(picker, hWnd);
+            picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
+            picker.FileTypeFilter.Add("*");
+
+            var folder = await picker.PickSingleFolderAsync();
+            if (folder != null)
+            {
+                var files = await folder.GetFilesAsync();
+                await ImportFilesToAndroid(files);
+            }
+        }
+
+        private async Task ImportFilesToAndroid(IEnumerable<StorageFile> files)
+        {
+            var progressDialog = new ContentDialog
+            {
+                Title = "Importing Files",
+                Content = new StackPanel
+                {
+                    Children =
+            {
+                new ProgressBar
+                {
+                    Name = "ImportProgressBar",
+                    Minimum = 0,
+                    Maximum = 100,
+                    Width = 300,
+                    Height = 20
+                        },
+                new TextBlock
+                {
+                    Name = "ImportProgressText",
+                    Margin = new Thickness(0, 10, 0, 0)
+                }
+            }
+                },
+                CloseButtonText = "Cancel"
+            };
+
+            progressDialog.XamlRoot = this.Content.XamlRoot;
+            var progressBar = ((StackPanel)progressDialog.Content).Children[0] as ProgressBar;
+            var progressText = ((StackPanel)progressDialog.Content).Children[1] as TextBlock;
+
+            // 显示进度对话框
+            _ = progressDialog.ShowAsync();
+
+            int totalFiles = files.Count();
+            int importedFiles = 0;
+
+            await Task.Run(() =>
+            {
+                foreach (var file in files)
+                {
+                    string localPath = file.Path;
+                    string androidPath = $"/sdcard/Pictures/transfer/{file.Name}";
+
+                    adbHelper.importFromPath(localPath, androidPath);
+
+                    importedFiles++;
+                    double progress = (double)importedFiles / totalFiles * 100;
+
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        progressBar.Value = progress;
+                        progressText.Text = $"{progress:F1}%";
+                    });
+                }
+            });
+
+            await Init();
+            // 隐藏进度对话框
+            progressDialog.Hide();
+
+            ContentDialog importDialog = new ContentDialog
+            {
+                Title = "Info",
+                Content = "Files import successful.",
+                PrimaryButtonText = "OK",
+            };
+            importDialog.XamlRoot = this.Content.XamlRoot;
+            await importDialog.ShowAsync();
+        }
+
+
+
         // 设置图片为壁纸
         private async void SetPhotoToWall_Clicks(object sender, RoutedEventArgs e)
         {
@@ -617,7 +804,7 @@ namespace WT_Transfer.Pages
         }
 
         // 删除操作
-        private async void Del_Clicks(object sender, RoutedEventArgs e)
+        private async void Del_Clicks2(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -660,7 +847,8 @@ namespace WT_Transfer.Pages
                     // 1. 删除目录
                     if (!string.IsNullOrEmpty(selectedBucket) && currentModule.Equals("bucket"))
                     {
-                        await Task.Run(async () => {
+                        await Task.Run(async () =>
+                        {
                             List<PhotoInfo> photoInfos = PhotosInBucket[selectedBucket];
 
                             foreach (var photo in photoInfos)
@@ -671,7 +859,8 @@ namespace WT_Transfer.Pages
                                 Result result = socketHelper.getResult("picture", "delete");
                             }
 
-                            DispatcherQueue.TryEnqueue(() => {
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
                                 // 更新UI，删除目录信息
                                 buckets.Remove(selectedBucket);
                                 PhotosInBucket.Remove(selectedBucket);
@@ -710,7 +899,8 @@ namespace WT_Transfer.Pages
                         else if (result.status.Equals("101"))
                         {
                             // 无权限
-                            DispatcherQueue.TryEnqueue(() => {
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
                                 show_error(" No permissions granted.");
                             });
                         }
@@ -739,6 +929,149 @@ namespace WT_Transfer.Pages
             }
         }
 
+
+        private async void Del_Clicks(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // 检查当前模块
+                if (currentModule.Equals("bucket"))
+                {
+                    // 删除选中的相册
+                    if (BucketGrid.SelectedItem != null)
+                    {
+                        string selectedBucket = BucketGrid.SelectedItem.ToString();
+
+                        // 询问用户确认删除操作
+                        ContentDialog deleteDialog = new ContentDialog
+                        {
+                            Title = "Delete Album",
+                            Content = "Are you sure you want to delete this album?",
+                            PrimaryButtonText = "Delete",
+                            SecondaryButtonText = "Cancel"
+                        };
+                        deleteDialog.XamlRoot = this.Content.XamlRoot;
+                        ContentDialogResult result = await deleteDialog.ShowAsync();
+
+                        if (result == ContentDialogResult.Primary)
+                        {
+                            await Task.Run(() =>
+                            {
+                                List<PhotoInfo> photosToDelete = PhotosInBucket[selectedBucket];
+
+                                foreach (var photo in photosToDelete)
+                                {
+                                    string path = photo.Path;
+                                    adbHelper.cmdExecuteWithAdbExit($"shell rm \"{path}\"");
+                                }
+
+                                DispatcherQueue.TryEnqueue(() =>
+                                {
+                                    // 更新UI，删除相册信息
+                                    PhotosInBucket.Remove(selectedBucket);
+                                    albumList.Remove(albumList.First(a => a.Name == selectedBucket));
+                                    BucketGrid.ItemsSource = albumList;
+                                });
+                            });
+
+                            ContentDialog successDialog = new ContentDialog
+                            {
+                                Title = "Success",
+                                Content = "Album deleted successfully.",
+                                PrimaryButtonText = "OK"
+                            };
+                            successDialog.XamlRoot = this.Content.XamlRoot;
+                            await successDialog.ShowAsync();
+                        }
+                    }
+                    else
+                    {
+                        ContentDialog errorDialog = new ContentDialog
+                        {
+                            Title = "Error",
+                            Content = "Please select an album to delete.",
+                            PrimaryButtonText = "OK"
+                        };
+                        errorDialog.XamlRoot = this.Content.XamlRoot;
+                        await errorDialog.ShowAsync();
+                    }
+                }
+                else if (currentModule.Equals("photo"))
+                {
+                    // 删除选中的图片
+                    if (PhotoGrid.SelectedItem != null)
+                    {
+                        PhotoInfo selectedPhoto = (PhotoInfo)PhotoGrid.SelectedItem;
+
+                        // 询问用户确认删除操作
+                        ContentDialog deleteDialog = new ContentDialog
+                        {
+                            Title = "Delete Photo",
+                            Content = "Are you sure you want to delete this photo?",
+                            PrimaryButtonText = "Delete",
+                            SecondaryButtonText = "Cancel"
+                        };
+                        deleteDialog.XamlRoot = this.Content.XamlRoot;
+                        ContentDialogResult result = await deleteDialog.ShowAsync();
+
+                        if (result == ContentDialogResult.Primary)
+                        {
+                            await Task.Run(() =>
+                            {
+                                string path = selectedPhoto.Path;
+                                adbHelper.cmdExecuteWithAdbExit($"shell rm \"{path}\"");
+
+                                DispatcherQueue.TryEnqueue(() =>
+                                {
+                                    // 更新UI，删除照片信息
+                                    var group = groupedData.FirstOrDefault(g => g.Contains(selectedPhoto));
+                                    if (group != null)
+                                    {
+                                        group.Remove(selectedPhoto);
+                                        if (group.Count == 0)
+                                        {
+                                            groupedData.Remove(group);
+                                        }
+                                    }
+
+                                    PhotoGrid.ItemsSource = null;
+                                    PhotoGrid.ItemsSource = groupedData;
+                                });
+                            });
+
+                            ContentDialog successDialog = new ContentDialog
+                            {
+                                Title = "Success",
+                                Content = "Photo deleted successfully.",
+                                PrimaryButtonText = "OK"
+                            };
+                            successDialog.XamlRoot = this.Content.XamlRoot;
+                            await successDialog.ShowAsync();
+                        }
+                    }
+                    else
+                    {
+                        ContentDialog errorDialog = new ContentDialog
+                        {
+                            Title = "Error",
+                            Content = "Please select a photo to delete.",
+                            PrimaryButtonText = "OK"
+                        };
+                        errorDialog.XamlRoot = this.Content.XamlRoot;
+                        await errorDialog.ShowAsync();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                show_error(ex.ToString());
+                logHelper.Info(logger, ex.ToString());
+                throw;
+            }
+        }
+
+
+
         // 返回按钮点击事件处理方法
         private void BackButton_Click(object sender, RoutedEventArgs e)
         {
@@ -750,7 +1083,13 @@ namespace WT_Transfer.Pages
                 currentModule = "bucket";
 
                 // 更新分页信息
-                BucketGrid.ItemsSource = albumList.Count == 0? AddAlbumList():albumList;
+                BucketGrid.ItemsSource = albumList.Count == 0 ? AddAlbumList() : albumList;
+
+                // 更新当前目录显示
+                //CurrentDirectoryTextBlock.Text = "Current Bucket: " + currentBucket;
+                currentDirectory = "/Pictures";
+                CurrentDirectoryTextBox.Text = currentDirectory;
+
             }
             catch (Exception ex)
             {
@@ -853,6 +1192,403 @@ namespace WT_Transfer.Pages
                 }
             }
         }
+
+        private void SortButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Method intentionally left empty, as specific sort actions are handled by the individual event handlers
+        }
+
+        private void SortButton2_Click(object sender, RoutedEventArgs e)
+        {
+            // Method intentionally left empty, as specific sort actions are handled by the individual event handlers
+        }
+
+        //设置排序，单选
+        private void SetSingleSelection(MenuFlyoutSubItem parent, ToggleMenuFlyoutItem selectedItem)
+        {
+            foreach (var item in parent.Items)
+            {
+                if (item is ToggleMenuFlyoutItem toggleItem)
+                {
+                    toggleItem.IsChecked = toggleItem == selectedItem;
+                }
+            }
+        }
+
+        private void SortByTimeCreated_Click(object sender, RoutedEventArgs e)
+        {
+            SetSingleSelection(SortBySubItem, (ToggleMenuFlyoutItem)sender);
+            SortCurrentGroupData(true);
+        }
+
+        private void SortByFileSize_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetSingleSelection(SortBySubItem, (ToggleMenuFlyoutItem)sender);
+                SortCurrentGroupDataByFileSize();
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
+        private void SortCurrentGroupDataByFileSize()
+        {
+            if (groupedData != null && groupedData.Any())
+            {
+                foreach (var group in groupedData)
+                {
+                    var sortedItems = group.OrderBy(photo => new FileInfo(photo.Path).Length).ToList();
+
+                    group.Clear();
+                    foreach (var item in sortedItems)
+                    {
+                        group.Add(item);
+                    }
+                }
+
+                var cvs = new CollectionViewSource
+                {
+                    IsSourceGrouped = true,
+                    Source = groupedData
+                };
+                PhotoGrid.ItemsSource = cvs.View;
+            }
+        }
+
+        private void SortAscending_Click(object sender, RoutedEventArgs e)
+        {
+            SetSingleSelection(OrderSubItem, (ToggleMenuFlyoutItem)sender);
+            SortCurrentGroupOrder(true);
+        }
+
+        private void SortDescending_Click(object sender, RoutedEventArgs e)
+        {
+            SetSingleSelection(OrderSubItem, (ToggleMenuFlyoutItem)sender);
+            SortCurrentGroupOrder(false);
+        }
+
+        private void SortCurrentGroupData(bool byDate)
+        {
+            if (groupedData != null && groupedData.Any())
+            {
+                var sortedGroups = byDate
+                    ? groupedData.OrderBy(group => DateTime.Parse(group.Key)).ToList()
+                    : groupedData.OrderBy(group => group.Sum(photo => new FileInfo(photo.Path).Length)).ToList();
+
+                groupedData.Clear();
+                foreach (var group in sortedGroups)
+                {
+                    groupedData.Add(group);
+                }
+
+                var cvs = new CollectionViewSource
+                {
+                    IsSourceGrouped = true,
+                    Source = groupedData
+                };
+                PhotoGrid.ItemsSource = cvs.View;
+            }
+        }
+
+        private void SortCurrentGroupOrder(bool ascending)
+        {
+            if (groupedData != null && groupedData.Any())
+            {
+                var sortedGroups = ascending
+                    ? groupedData.OrderBy(group => group.Key).ToList()
+                    : groupedData.OrderByDescending(group => group.Key).ToList();
+
+                groupedData.Clear();
+                foreach (var group in sortedGroups)
+                {
+                    groupedData.Add(group);
+                }
+
+                var cvs = new CollectionViewSource
+                {
+                    IsSourceGrouped = true,
+                    Source = groupedData
+                };
+                PhotoGrid.ItemsSource = cvs.View;
+            }
+        }
+
+
+
+        private void UpdatePhotoGrid(string directoryName)
+        {
+            if (currentModule == "photo" && PhotosInBucket.TryGetValue(directoryName, out var photosInDirectory))
+            {
+                var groupedData = new ObservableCollection<GroupInfoList>();
+
+                var groupedPhotos = photosInDirectory
+                    .GroupBy(p => DateTime.Parse(p.Date).ToString("yyyy-MM-dd"))
+                    .OrderByDescending(g => g.Key);
+
+                foreach (var group in groupedPhotos)
+                {
+                    var groupInfoList = new GroupInfoList { Key = group.Key };
+                    groupInfoList.AddRange(group);
+                    groupedData.Add(groupInfoList);
+                }
+
+                var cvs = new CollectionViewSource
+                {
+                    IsSourceGrouped = true,
+                    Source = groupedData
+                };
+
+                PhotoGrid.ItemsSource = cvs.View;
+            }
+        }
+
+        private void SetSingleSelection(ToggleMenuFlyoutItem selectedItem)
+        {
+            // Uncheck all ToggleMenuFlyoutItems
+            AllTime.IsChecked = false;
+            ThisWeek.IsChecked = false;
+            ThisMonth.IsChecked = false;
+            LastMonth.IsChecked = false;
+            Last3Months.IsChecked = false;
+            Last6Months.IsChecked = false;
+            ThisYear.IsChecked = false;
+
+            // Check the selected item
+            selectedItem.IsChecked = true;
+        }
+
+        private void FilterByAllTime_Click(object sender, RoutedEventArgs e)
+        {
+            SetSingleSelection((ToggleMenuFlyoutItem)sender);
+            FilterPhotosByDateRange(DateTime.MinValue, DateTime.MaxValue);
+        }
+
+        private void FilterByThisWeek_Click(object sender, RoutedEventArgs e)
+        {
+            SetSingleSelection((ToggleMenuFlyoutItem)sender);
+            var startOfWeek = DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek);
+            var endOfWeek = startOfWeek.AddDays(7).AddSeconds(-1);
+            FilterPhotosByDateRange(startOfWeek, endOfWeek);
+        }
+
+        private void FilterByThisMonth_Click(object sender, RoutedEventArgs e)
+        {
+            SetSingleSelection((ToggleMenuFlyoutItem)sender);
+            var startOfMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            var endOfMonth = startOfMonth.AddMonths(1).AddSeconds(-1);
+            FilterPhotosByDateRange(startOfMonth, endOfMonth);
+        }
+
+        private void FilterByLastMonth_Click(object sender, RoutedEventArgs e)
+        {
+            SetSingleSelection((ToggleMenuFlyoutItem)sender);
+            var startOfLastMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1);
+            var endOfLastMonth = startOfLastMonth.AddMonths(1).AddSeconds(-1);
+            FilterPhotosByDateRange(startOfLastMonth, endOfLastMonth);
+        }
+
+        private void FilterByLast3Months_Click(object sender, RoutedEventArgs e)
+        {
+            SetSingleSelection((ToggleMenuFlyoutItem)sender);
+            var startOfLast3Months = DateTime.Today.AddMonths(-3);
+            FilterPhotosByDateRange(startOfLast3Months, DateTime.Today);
+        }
+
+        private void FilterByLast6Months_Click(object sender, RoutedEventArgs e)
+        {
+            SetSingleSelection((ToggleMenuFlyoutItem)sender);
+            var startOfLast6Months = DateTime.Today.AddMonths(-6);
+            FilterPhotosByDateRange(startOfLast6Months, DateTime.Today);
+        }
+
+        private void FilterByThisYear_Click(object sender, RoutedEventArgs e)
+        {
+            SetSingleSelection((ToggleMenuFlyoutItem)sender);
+            var startOfYear = new DateTime(DateTime.Today.Year, 1, 1);
+            var endOfYear = startOfYear.AddYears(1).AddSeconds(-1);
+            FilterPhotosByDateRange(startOfYear, endOfYear);
+        }
+
+        private void FilterPhotosByDateRange(DateTime startDate, DateTime endDate)
+        {
+            var filteredGroups = new ObservableCollection<GroupInfoList>();
+
+            foreach (var group in groupedData)
+            {
+                var filteredItems = group.Where(photo => DateTime.Parse(photo.Date) >= startDate && DateTime.Parse(photo.Date) <= endDate).ToList();
+
+                if (filteredItems.Any())
+                {
+                    var newGroup = new GroupInfoList { Key = group.Key };
+                    newGroup.AddRange(filteredItems);
+                    filteredGroups.Add(newGroup);
+                }
+            }
+
+            var cvs = new CollectionViewSource
+            {
+                IsSourceGrouped = true,
+                Source = filteredGroups
+            };
+
+            PhotoGrid.ItemsSource = cvs.View;
+        }
+
+        private void DatePicker_DateChanged(CalendarDatePicker sender, CalendarDatePickerDateChangedEventArgs args)
+        {
+            FilterPhotosBySelectedDateRange();
+        }
+
+        private void FilterPhotosBySelectedDateRange()
+        {
+            if (StartDatePicker.Date.HasValue && EndDatePicker.Date.HasValue)
+            {
+                DateTime startDate = StartDatePicker.Date.Value.DateTime;
+                DateTime endDate = EndDatePicker.Date.Value.DateTime;
+
+                var filteredGroups = new ObservableCollection<GroupInfoList>();
+
+                foreach (var group in groupedData)
+                {
+                    var filteredItems = group.Where(photo => DateTime.Parse(photo.Date) >= startDate && DateTime.Parse(photo.Date) <= endDate).ToList();
+
+                    if (filteredItems.Any())
+                    {
+                        var newGroup = new GroupInfoList { Key = group.Key };
+                        newGroup.AddRange(filteredItems);
+                        filteredGroups.Add(newGroup);
+                    }
+                }
+
+                var cvs = new CollectionViewSource
+                {
+                    IsSourceGrouped = true,
+                    Source = filteredGroups
+                };
+
+                PhotoGrid.ItemsSource = cvs.View;
+            }
+        }
+
+        private void ExportAllPhotos_Click(object sender, RoutedEventArgs e)
+        {
+            // 处理导出所有图片的逻辑
+            ExportPhotos(allPhotos: true);
+        }
+
+        private void ExportSelectedPhotos_Click(object sender, RoutedEventArgs e)
+        {
+            // 处理导出选中图片的逻辑
+            ExportPhotos(allPhotos: false);
+        }
+
+        private async void ExportPhotos(bool allPhotos)
+        {
+            try
+            {
+                var filePicker = new FolderPicker();
+                var hWnd = MainWindow.WindowHandle;
+                InitializeWithWindow.Initialize(filePicker, hWnd);
+                filePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+                filePicker.FileTypeFilter.Add("*");
+                Windows.Storage.StorageFolder storageFolder = await filePicker.PickSingleFolderAsync();
+
+                if (storageFolder != null)
+                {
+                    List<PhotoInfo> photosToExport;
+
+                    if (allPhotos)
+                    {
+                        // 导出所有图片的逻辑
+                        photosToExport = Photos;
+                    }
+                    else
+                    {
+                        // 导出选中图片的逻辑
+                        photosToExport = Photos.Where(photo => photo.IsSelected).ToList();
+                    }
+                    // 创建并显示ContentDialog
+                    var progressDialog = new ContentDialog
+                    {
+                        Title = "Exporting Photos",
+                        Content = new StackPanel
+                        {
+                            Children =
+                        {
+                            new ProgressBar
+                            {
+                                Name = "ExportProgressBar",
+                                Minimum = 0,
+                                Maximum = 100,
+                                Width = 300,
+                                Height = 20
+                            },
+                            new TextBlock
+                            {
+                                Name = "ExportProgressText",
+                                Margin = new Thickness(0, 10, 0, 0)
+                            }
+                            }
+                        },
+                        CloseButtonText = "Cancel"
+                    };
+                    progressDialog.XamlRoot = this.Content.XamlRoot;
+                    var progressBar = ((StackPanel)progressDialog.Content).Children[0] as ProgressBar;
+                    var progressText = ((StackPanel)progressDialog.Content).Children[1] as TextBlock;
+
+                    // 显示进度对话框
+                    _ = progressDialog.ShowAsync();
+
+
+
+                    await Task.Run(() =>
+                    {
+                        int totalPhotos = photosToExport.Count;
+                        int exportedPhotos = 0;
+
+                        foreach (var photo in photosToExport)
+                        {
+                            string path = photo.Path;
+                            string localPath = storageFolder.Path;
+
+                            adbHelper.saveFromPath(path, localPath);
+
+                            exportedPhotos++;
+                            double progress = (double)exportedPhotos / totalPhotos * 100;
+
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
+                                progressBar.Value = progress;
+                                progressText.Text = $"{progress:F1}%";
+                            });
+                        }
+                    });
+
+                    // 关闭ContentDialog
+                    progressDialog.Hide();
+
+                    ContentDialog exportDialog = new ContentDialog
+                    {
+                        Title = "Info",
+                        Content = "Photos export successful.",
+                        PrimaryButtonText = "OK",
+                    };
+                    exportDialog.XamlRoot = this.Content.XamlRoot;
+                    await exportDialog.ShowAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                show_error(ex.ToString());
+                logHelper.Info(logger, ex.ToString());
+                throw;
+            }
+        }
+
+
     }
 
     public class AlbumInfo
@@ -899,5 +1635,7 @@ namespace WT_Transfer.Pages
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+
     }
 }

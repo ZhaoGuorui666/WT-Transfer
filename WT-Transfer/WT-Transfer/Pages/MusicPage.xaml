@@ -79,6 +79,7 @@
             AlbumInfoTemplate="{StaticResource AlbumInfoTemplate}"
             MusicInfoTemplate="{StaticResource MusicInfoTemplate}" />
 
+
     </Page.Resources>
 
     <Grid HorizontalAlignment="Stretch" Background="{ThemeResource pageBackground}">
@@ -125,14 +126,20 @@
                     <StackPanel Orientation="Horizontal">
 
                         <AppBarButton
-                            x:Name="PullMusic"
-                            Margin="20,0,0,0"
-                            Click="PullMusic_Click"
+                            x:Name="ExportButton"
+                            Margin="12,0,0,0"
                             Label="Export to PC">
                             <AppBarButton.Content>
-                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xe896;" />
+                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xe898;" />
                             </AppBarButton.Content>
+                            <AppBarButton.Flyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem Text="Export All" />
+                                    <MenuFlyoutItem Text="Export All" />
+                                </MenuFlyout>
+                            </AppBarButton.Flyout>
                         </AppBarButton>
+
                         <AppBarButton
                             x:Name="PushMusic"
                             Margin="12,0,0,0"
@@ -158,7 +165,6 @@
                         <AppBarButton
                             x:Name="Refresh"
                             Margin="12,0,0,0"
-                            Click="Refresh_Click"
                             Label="Refresh">
                             <AppBarButton.Content>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xe72c;" />

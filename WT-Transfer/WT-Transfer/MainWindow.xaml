@@ -97,6 +97,11 @@
                     <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE713;" />
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
+            <NavigationViewItem Content="test" Tag="test">
+                <NavigationViewItem.Icon>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE713;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
 
 
             <!--  使用自定义样式的 NavigationViewItemSeparator  -->

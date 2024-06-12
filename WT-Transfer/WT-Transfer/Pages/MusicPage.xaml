@@ -79,6 +79,7 @@
             AlbumInfoTemplate="{StaticResource AlbumInfoTemplate}"
             MusicInfoTemplate="{StaticResource MusicInfoTemplate}" />
 
+
     </Page.Resources>
 
     <Grid HorizontalAlignment="Stretch" Background="{ThemeResource pageBackground}">
@@ -126,15 +127,15 @@
 
                         <AppBarButton
                             x:Name="ExportButton"
-                            Margin="10"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Top"
-                            Click="ExportButton_Click"
-                            Content="Export to PC">
+                            Margin="12,0,0,0"
+                            Label="Export to PC">
+                            <AppBarButton.Content>
+                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xe898;" />
+                            </AppBarButton.Content>
                             <AppBarButton.Flyout>
                                 <MenuFlyout>
-                                    <MenuFlyoutItem Click="ExportAllPhotos_Click" Text="导出所有照片" />
-                                    <MenuFlyoutItem Click="ExportSelectedPhotos_Click" Text="导出选中的照片" />
+                                    <MenuFlyoutItem Text="Export All" />
+                                    <MenuFlyoutItem Text="Export All" />
                                 </MenuFlyout>
                             </AppBarButton.Flyout>
                         </AppBarButton>
@@ -164,7 +165,6 @@
                         <AppBarButton
                             x:Name="Refresh"
                             Margin="12,0,0,0"
-                            Click="Refresh_Click"
                             Label="Refresh">
                             <AppBarButton.Content>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xe72c;" />

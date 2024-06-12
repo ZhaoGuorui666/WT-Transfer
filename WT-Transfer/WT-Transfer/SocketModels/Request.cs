@@ -17,6 +17,7 @@ namespace WT_Transfer.SocketModels
             public String path;
             public String data_id;
             public ContactInfo contact_info;
+            public List<String> paths;
         }
 
         public class ContactInfo

@@ -42,6 +42,7 @@ using WT_Transfer.SocketModels;
 using Path = System.IO.Path;
 using static WT_Transfer.SocketModels.Request;
 using Microsoft.UI;
+using NPOI.HPSF;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -404,6 +405,9 @@ namespace WT_Transfer.Pages
                 {
                     return;
                 }
+
+
+                List<String> paths = new List<string>();
                 foreach (var file in fileNames)
                 {
                     // 从路径中拿到文件名称
@@ -411,23 +415,27 @@ namespace WT_Transfer.Pages
                     string command = "push \"" + file + "\"" + " \"" + "/sdcard/Music/" + fileName + "\"";
                     string res = adbHelper.cmdExecuteWithAdbExit(command) + "\n";
 
-
-                    // 新增音乐
-                    Request request = new Request();
-                    request.command_id = DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString();
-                    request.module = "music";
-                    request.operation = "insert";
-
-                    string requestStr = JsonConvert.SerializeObject(request);
-                    SocketHelper helper = new SocketHelper();
-                    Result result = new Result();
-                    await Task.Run(() =>
-                    {
-                        result = helper.ExecuteOp(requestStr);
-                    });
-
-
+                    paths.Add("/sdcard/Music/" + fileName);
+                    
                 }
+
+                // 提醒手机 新增音乐，扫描
+                Request request = new Request();
+                request.command_id = DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString();
+                request.module = "music";
+                request.operation = "insert";
+                request.info = new Data
+                {
+                    paths = paths,
+                };
+
+                string requestStr = JsonConvert.SerializeObject(request);
+                SocketHelper helper = new SocketHelper();
+                Result result = new Result();
+                await Task.Run(() =>
+                {
+                    result = helper.ExecuteOp(requestStr);
+                });
 
 
                 ContentDialog appInfoDialog = new ContentDialog

@@ -202,7 +202,7 @@
 
                     <AppBarButton
                         x:Name="DelPhoto"
-                        Click="Del_Clicks"
+                        Click="DeleteSelectedPhotosButton_Click"
                         Label="Delete">
                         <AppBarButton.Content>
                             <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE74D;" />
@@ -210,7 +210,10 @@
                     </AppBarButton>
 
 
-                    <AppBarButton x:Name="Refresh" Label="Refresh">
+                    <AppBarButton
+                        x:Name="Refresh"
+                        Click="RefreshButton_Click"
+                        Label="Refresh">
                         <AppBarButton.Content>
                             <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72C;" />
                         </AppBarButton.Content>

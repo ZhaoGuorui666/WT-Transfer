@@ -134,8 +134,8 @@
                             </AppBarButton.Content>
                             <AppBarButton.Flyout>
                                 <MenuFlyout>
-                                    <MenuFlyoutItem Text="Export All" />
-                                    <MenuFlyoutItem Text="Export All" />
+                                    <MenuFlyoutItem Click="ExportAllMusic_Click" Text="Export All Musics" />
+                                    <MenuFlyoutItem Click="ExportSelectedMusic_Click" Text="Export Selected Musics" />
                                 </MenuFlyout>
                             </AppBarButton.Flyout>
                         </AppBarButton>
@@ -143,11 +143,16 @@
                         <AppBarButton
                             x:Name="PushMusic"
                             Margin="12,0,0,0"
-                            Click="PushMusic_Click"
                             Label="Import to Android">
                             <AppBarButton.Content>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xe898;" />
                             </AppBarButton.Content>
+                            <AppBarButton.Flyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem Click="SelectFiles_Click" Text="Select Files" />
+                                    <MenuFlyoutItem Click="SelectFolder_Click" Text="Select Folder" />
+                                </MenuFlyout>
+                            </AppBarButton.Flyout>
                         </AppBarButton>
 
 
@@ -165,6 +170,7 @@
                         <AppBarButton
                             x:Name="Refresh"
                             Margin="12,0,0,0"
+                            Click="Refresh_Click"
                             Label="Refresh">
                             <AppBarButton.Content>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xe72c;" />
@@ -307,6 +313,7 @@
                     Margin="5"
                     VerticalAlignment="Center"
                     FontWeight="SemiBold"
+                    PointerPressed="SortByName_Click"
                     Text="Name"
                     TextAlignment="Left" />
                 <TextBlock

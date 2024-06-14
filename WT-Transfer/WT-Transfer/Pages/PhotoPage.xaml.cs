@@ -684,6 +684,11 @@ namespace WT_Transfer.Pages
 
         private async Task ImportFilesToAndroid(IEnumerable<StorageFile> files)
         {
+            if (!files.Any())
+            {
+                return;
+            }
+
             var progressDialog = new ContentDialog
             {
                 Title = "Importing Files",
@@ -1473,6 +1478,7 @@ namespace WT_Transfer.Pages
             }
         }
 
+        //导出所有图片
         private void ExportAllPhotos_Click(object sender, RoutedEventArgs e)
         {
             // 处理导出所有图片的逻辑

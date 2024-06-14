@@ -103,6 +103,17 @@ namespace WT_Transfer.Helper
             return res;
         }
 
+        //有空格，改成单引号
+        public string saveFromPathWithBlank(string phonePath, string winPath)
+        {
+            string str = System.IO.Path.GetFullPath(winPath);
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(winPath));
+
+            string command = "pull -a \"" + phonePath + "\"" + " \"" + winPath + "\"";
+            string res = cmdExecuteWithAdb(command) + "\n";
+            return res;
+        }
+
         public string savePathFromPath(string phonePath, string winPath)
         {
             string str = System.IO.Path.GetFullPath(winPath);
@@ -124,7 +135,8 @@ namespace WT_Transfer.Helper
         //删除操作
         public string delFromPath(string path)
         {
-            string command = "shell rm " + path;
+            string command = "shell rm \'" + path+ "\'";
+            //string command = "rm " + path;
             string res = cmdExecuteWithAdb(command) + "\n";
 
             return res;

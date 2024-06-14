@@ -387,6 +387,123 @@ namespace WT_Transfer.Pages
             }
         }
 
+
+        private async void ExportAllMusic_Click(object sender, RoutedEventArgs e)
+        {
+            // 处理导出所有图片的逻辑
+            ExportMusics(allMusics: true);
+        }
+
+        private async void ExportSelectedMusic_Click(object sender, RoutedEventArgs e)
+        {
+            ExportMusics(allMusics: false);
+        }
+
+
+        private async void ExportMusics(bool allMusics)
+        {
+            try
+            {
+                var filePicker = new FolderPicker();
+                var hWnd = MainWindow.WindowHandle;
+                InitializeWithWindow.Initialize(filePicker, hWnd);
+                filePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+                filePicker.FileTypeFilter.Add("*");
+                Windows.Storage.StorageFolder storageFolder = await filePicker.PickSingleFolderAsync();
+
+                if (storageFolder != null)
+                {
+                    List<MusicInfo> musicsToExport;
+
+                    if (allMusics)
+                    {
+                        // 导出所有音乐的逻辑
+                        musicsToExport = Musics.ToList();
+                    }
+                    else
+                    {
+                        // 导出选中音乐的逻辑
+                        musicsToExport = Musics.Where(music => music.IsSelected).ToList();
+                    }
+                    // 创建并显示ContentDialog
+                    var progressDialog = new ContentDialog
+                    {
+                        Title = "Exporting Musics",
+                        Content = new StackPanel
+                        {
+                            Children =
+                        {
+                            new ProgressBar
+                            {
+                                Name = "ExportProgressBar",
+                                Minimum = 0,
+                                Maximum = 100,
+                                Width = 300,
+                                Height = 20
+                            },
+                            new TextBlock
+                            {
+                                Name = "ExportProgressText",
+                                Margin = new Thickness(0, 10, 0, 0)
+                            }
+                            }
+                        },
+                        CloseButtonText = "Cancel"
+                    };
+                    progressDialog.XamlRoot = this.Content.XamlRoot;
+                    var progressBar = ((StackPanel)progressDialog.Content).Children[0] as ProgressBar;
+                    var progressText = ((StackPanel)progressDialog.Content).Children[1] as TextBlock;
+
+                    // 显示进度对话框
+                    _ = progressDialog.ShowAsync();
+
+
+
+                    await Task.Run(() =>
+                    {
+                        int totalMusics = musicsToExport.Count;
+                        int exportedMusics = 0;
+
+                        foreach (var music in musicsToExport)
+                        {
+                            string path = music.fileUrl;
+                            string localPath = storageFolder.Path+"\\"+music.fileName;
+
+                            adbHelper.saveFromPathWithBlank(path, localPath);
+
+                            exportedMusics++;
+                            double progress = (double)exportedMusics / totalMusics * 100;
+
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
+                                progressBar.Value = progress;
+                                progressText.Text = $"{progress:F1}%";
+                            });
+                        }
+                    });
+
+                    // 关闭ContentDialog
+                    progressDialog.Hide();
+
+                    ContentDialog exportDialog = new ContentDialog
+                    {
+                        Title = "Info",
+                        Content = "Musics export successful.",
+                        PrimaryButtonText = "OK",
+                    };
+                    exportDialog.XamlRoot = this.Content.XamlRoot;
+                    await exportDialog.ShowAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                show_error(ex.ToString());
+                logHelper.Info(logger, ex.ToString());
+                throw;
+            }
+        }
+
+
         //往手机中传入音乐
         private async void PushMusic_Click(object sender, RoutedEventArgs e)
         {
@@ -570,12 +687,17 @@ namespace WT_Transfer.Pages
                 Musics.Remove(music);
             }
 
+
             // 更新UI
             // 删除音乐
             Request request = new Request();
             request.command_id = DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString();
             request.module = "music";
-            request.operation = "insert";
+            request.operation = "delete";
+            request.info = new Data
+            {
+                paths = selectedMusics.Select(file => file.fileUrl).ToList<string>(),
+            };
 
             string requestStr = JsonConvert.SerializeObject(request);
             SocketHelper helper = new SocketHelper();
@@ -585,7 +707,7 @@ namespace WT_Transfer.Pages
                 result = helper.ExecuteOp(requestStr);
             });
 
-
+            
             // 刷新选中状态
             //UpdateSelectedFilesInfo();
 
@@ -965,6 +1087,148 @@ namespace WT_Transfer.Pages
             UpdateSelectedFilesInfo();
         }
 
+        private async void SelectFiles_Click(object sender, RoutedEventArgs e)
+        {
+            var picker = new FileOpenPicker();
+            picker.SuggestedStartLocation = PickerLocationId.Desktop;
+            picker.FileTypeFilter.Add(".mp3");
+            picker.FileTypeFilter.Add(".wav");
+            picker.FileTypeFilter.Add(".flac");
+
+            var hwnd = MainWindow.WindowHandle;
+            InitializeWithWindow.Initialize(picker, hwnd);
+
+            var files = await picker.PickMultipleFilesAsync();
+            if (files != null)
+            {
+                await ImportFilesToAndroid(files);
+            }
+        }
+
+        private async void SelectFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var picker = new FolderPicker();
+            picker.SuggestedStartLocation = PickerLocationId.Desktop;
+            picker.FileTypeFilter.Add("*");
+
+            var hwnd = MainWindow.WindowHandle;
+            InitializeWithWindow.Initialize(picker, hwnd);
+
+            var folder = await picker.PickSingleFolderAsync();
+            if (folder != null)
+            {
+                var files = await folder.GetFilesAsync();
+                await ImportFilesToAndroid(files);
+            }
+        }
+
+        private async Task ImportFilesToAndroid(IEnumerable<StorageFile> files)
+        {
+            if(!files.Any())
+            {
+                return;
+            }
+
+
+            var progressDialog = new ContentDialog
+            {
+                Title = "Importing Files",
+                Content = new StackPanel
+                {
+                    Children =
+            {
+                new ProgressBar
+                {
+                    Name = "ImportProgressBar",
+                    Minimum = 0,
+                    Maximum = 100,
+                    Width = 300,
+                    Height = 20
+                        },
+                new TextBlock
+                {
+                    Name = "ImportProgressText",
+                    Margin = new Thickness(0, 10, 0, 0)
+                }
+            }
+                },
+                CloseButtonText = "Cancel"
+            };
+
+            progressDialog.XamlRoot = this.Content.XamlRoot;
+            var progressBar = ((StackPanel)progressDialog.Content).Children[0] as ProgressBar;
+            var progressText = ((StackPanel)progressDialog.Content).Children[1] as TextBlock;
+
+            // 显示进度对话框
+            _ = progressDialog.ShowAsync();
+
+            int totalFiles = files.Count();
+            int importedFiles = 0;
+
+            await Task.Run(() =>
+            {
+                foreach (var file in files)
+                {
+                    string localPath = file.Path;
+                    string androidPath = $"/sdcard/Music/{file.Name}";
+
+                    adbHelper.importFromPath(localPath, androidPath);
+
+                    importedFiles++;
+                    double progress = (double)importedFiles / totalFiles * 100;
+
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        progressBar.Value = progress;
+                        progressText.Text = $"{progress:F1}%";
+                    });
+                }
+            });
+
+            List<String> paths = new List<string>();
+            foreach (var file in files)
+            {
+                paths.Add("/sdcard/Music/" + file.Name);
+            }
+
+            // 提醒手机 新增音乐，扫描
+            Request request = new Request();
+            request.command_id = DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString();
+            request.module = "music";
+            request.operation = "insert";
+            request.info = new Data
+            {
+                paths = paths,
+            };
+
+            string requestStr = JsonConvert.SerializeObject(request);
+            SocketHelper helper = new SocketHelper();
+            Result result = new Result();
+            await Task.Run(() =>
+            {
+                result = helper.ExecuteOp(requestStr);
+            });
+
+            await RefreshMusicList();
+            ListButton_Click(ListButton, new RoutedEventArgs()); // 模拟点击 ListButton
+
+            // 隐藏进度对话框
+            progressDialog.Hide();
+
+            ContentDialog importDialog = new ContentDialog
+            {
+                Title = "Info",
+                Content = "Files import successful.",
+                PrimaryButtonText = "OK",
+            };
+            importDialog.XamlRoot = this.Content.XamlRoot;
+            await importDialog.ShowAsync();
+        }
+
+        private void Refresh_Click_1(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 
     public class SingerItemTemplateSelector : DataTemplateSelector

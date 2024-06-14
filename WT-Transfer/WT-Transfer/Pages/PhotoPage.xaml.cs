@@ -35,6 +35,9 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using Org.BouncyCastle.Asn1.X509;
 using System.ComponentModel;
 using static NPOI.HSSF.Util.HSSFColor;
+using Newtonsoft.Json;
+using static WT_Transfer.SocketModels.Request;
+using System.Threading;
 
 namespace WT_Transfer.Pages
 {
@@ -1594,6 +1597,183 @@ namespace WT_Transfer.Pages
             }
         }
 
+        private async void DeleteSelectedPhotosButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // 检查当前模块
+                if (currentModule.Equals("photo"))
+                {
+                    var selectedPhotos = PhotoGrid.SelectedItems.Cast<PhotoInfo>().ToList();
+                    if (selectedPhotos.Any())
+                    {
+                        // 询问用户确认删除操作
+                        ContentDialog deleteDialog = new ContentDialog
+                        {
+                            Title = "Delete Photos",
+                            Content = "Are you sure you want to delete the selected photos?",
+                            PrimaryButtonText = "Delete",
+                            SecondaryButtonText = "Cancel"
+                        };
+                        deleteDialog.XamlRoot = this.Content.XamlRoot;
+                        ContentDialogResult result = await deleteDialog.ShowAsync();
+
+                        if (result == ContentDialogResult.Primary)
+                        {
+                            await Task.Run(() =>
+                            {
+                                foreach (var photo in selectedPhotos)
+                                {
+                                    string path = photo.Path;
+                                    adbHelper.cmdExecuteWithAdbExit("shell rm " + path);
+
+                                    DispatcherQueue.TryEnqueue(() =>
+                                    {
+                                        var group = groupedData.FirstOrDefault(g => g.Contains(photo));
+                                        if (group != null)
+                                        {
+                                            group.Remove(photo);
+                                            if (group.Count == 0)
+                                            {
+                                                groupedData.Remove(group);
+                                            }
+                                        }
+
+                                        // 更新相应的 AlbumInfo
+                                        var album = albumList.FirstOrDefault(a => a.Name == photo.Bucket);
+                                        if (album != null)
+                                        {
+                                            album.PhotoCount--;
+                                            if (album.PhotoCount == 0)
+                                            {
+                                                albumList.Remove(album);
+                                            }
+                                        }
+                                    });
+
+                                }
+                            });
+
+                            Request request = new Request();
+                            request.command_id = DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString();
+                            request.module = "picture";
+                            request.operation = "delete";
+                            request.info = new Data
+                            {
+                                paths = selectedPhotos.Select(file => file.Path).ToList<string>(),
+                            };
+
+                            string requestStr = JsonConvert.SerializeObject(request);
+                            SocketHelper helper = new SocketHelper();
+                            Result result2 = new Result();
+                            await Task.Run(() =>
+                            {
+                                result2 = helper.ExecuteOp(requestStr);
+                            });
+
+
+                            ContentDialog successDialog = new ContentDialog
+                            {
+                                Title = "Success",
+                                Content = "Selected photos deleted successfully.",
+                                PrimaryButtonText = "OK"
+                            };
+                            successDialog.XamlRoot = this.Content.XamlRoot;
+                            await successDialog.ShowAsync();
+
+
+                            var cvs = new CollectionViewSource
+                            {
+                                IsSourceGrouped = true,
+                                Source = groupedData
+                            };
+                            PhotoGrid.ItemsSource = cvs.View;
+                        }
+                    }
+                    else
+                    {
+                        ContentDialog errorDialog = new ContentDialog
+                        {
+                            Title = "Error",
+                            Content = "Please select photos to delete.",
+                            PrimaryButtonText = "OK"
+                        };
+                        errorDialog.XamlRoot = this.Content.XamlRoot;
+                        await errorDialog.ShowAsync();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                show_error(ex.ToString());
+                logHelper.Info(logger, ex.ToString());
+                throw;
+            }
+        }
+
+        private async void RefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    // 显示加载进度条
+                    BucketGrid.Visibility = Visibility.Collapsed;
+                    PhotoGrid.Visibility = Visibility.Collapsed;
+                    progressRing.Visibility = Visibility.Visible;
+                });
+
+
+
+                // 更新UI
+                if (currentModule == "bucket")
+                {
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        try
+                        {
+                            BucketGrid.ItemsSource = albumList.Count == 0 ? AddAlbumList() : albumList;
+                            BucketGrid.Visibility = Visibility.Visible;
+                        }
+                        catch (Exception ex)
+                        {
+                            show_error("Error updating UI: " + ex.Message);
+                            logHelper.Info(logger, ex.ToString());
+                        }
+                    });
+
+                }
+                else if (currentModule == "photo")
+                {
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        try
+                        {
+                            UpdatePhotoGrid(currentBucket);
+                            PhotoGrid.Visibility = Visibility.Visible;
+                        }
+                        catch (Exception ex)
+                        {
+                            show_error("Error updating UI: " + ex.Message);
+                            logHelper.Info(logger, ex.ToString());
+                        }
+
+                    });
+                }
+
+                // 隐藏加载进度条
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    progressRing.Visibility = Visibility.Collapsed;
+                });
+            }
+            catch (Exception ex)
+            {
+                show_error(ex.ToString());
+                logHelper.Info(logger, ex.ToString());
+                throw;
+            }
+        }
 
     }
 

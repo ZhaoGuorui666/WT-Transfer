@@ -1087,6 +1087,7 @@ namespace WT_Transfer.Pages
             UpdateSelectedFilesInfo();
         }
 
+        //选择文件夹，音乐导入
         private async void SelectFiles_Click(object sender, RoutedEventArgs e)
         {
             var picker = new FileOpenPicker();
@@ -1225,10 +1226,27 @@ namespace WT_Transfer.Pages
             await importDialog.ShowAsync();
         }
 
-        private void Refresh_Click_1(object sender, RoutedEventArgs e)
+        //点击表头排序
+        private bool _isSortedAscending = true;
+        public ObservableCollection<MusicInfo> SortedMusics { get; set; } = new ObservableCollection<MusicInfo>();
+        private void SortByName_Click(object sender, RoutedEventArgs e)
         {
+            if (_isSortedAscending)
+            {
+                SortedMusics = new ObservableCollection<MusicInfo>(Musics.OrderBy(m => m.fileName));
+            }
+            else
+            {
+                SortedMusics = new ObservableCollection<MusicInfo>(Musics.OrderByDescending(m => m.fileName));
+            }
 
+            _isSortedAscending = !_isSortedAscending;
+
+            // 重新绑定 ItemsRepeater 的 ItemsSource
+            musicListRepeater.ItemsSource = SortedMusics;
         }
+
+
     }
 
     public class SingerItemTemplateSelector : DataTemplateSelector

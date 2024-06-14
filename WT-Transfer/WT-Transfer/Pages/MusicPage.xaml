@@ -313,6 +313,7 @@
                     Margin="5"
                     VerticalAlignment="Center"
                     FontWeight="SemiBold"
+                    PointerPressed="SortByName_Click"
                     Text="Name"
                     TextAlignment="Left" />
                 <TextBlock

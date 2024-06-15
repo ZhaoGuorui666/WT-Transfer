@@ -9,7 +9,7 @@
   <Identity
     Name="ba4c98c8-878b-42cb-8cdb-cac876ccdf9d"
     Publisher="CN=Windows 10"
-    Version="1.0.61.0" />
+    Version="1.0.62.0" />
 
   <Properties>
     <DisplayName>WT-Transfer (Package)</DisplayName>

@@ -38,6 +38,7 @@ using static NPOI.HSSF.Util.HSSFColor;
 using Newtonsoft.Json;
 using static WT_Transfer.SocketModels.Request;
 using System.Threading;
+using Microsoft.UI.Xaml.Shapes;
 
 namespace WT_Transfer.Pages
 {
@@ -197,7 +198,8 @@ namespace WT_Transfer.Pages
                                                {
                                                    Bucket = item["bucket"]?.ToString(),
                                                    Date = item["date"]?.ToString(),
-                                                   Path = item["path"]?.ToString()
+                                                   Path = item["path"]?.ToString(),
+                                                   Size = item["size"]?.ToString(),
                                                })
                                             .ToArray();
 
@@ -219,6 +221,7 @@ namespace WT_Transfer.Pages
                                 photoInfo.Bucket = item.Bucket;
                                 photoInfo.Date = item.Date;
                                 photoInfo.Path = item.Path;
+                                photoInfo.Size = item.Size;
                                 photoInfo.getTitle();
 
                                 if (item.Bucket == null)
@@ -321,6 +324,7 @@ namespace WT_Transfer.Pages
         // 初始化目录 AlbumList
         private List<AlbumInfo> AddAlbumList()
         {
+            albumList = new List<AlbumInfo>();
             foreach (var kv in PhotosInBucket)
             {
                 List<PhotoInfo> photos = new List<PhotoInfo>();
@@ -401,16 +405,6 @@ namespace WT_Transfer.Pages
                             });
 
 
-                            // 检查是否已经设置了缩略图路径
-                            bool allPhotosHaveLocalPath = photos.Take(10).All(photo => !string.IsNullOrEmpty(photo.LocalPath) && File.Exists(photo.LocalPath));
-
-                            if (!allPhotosHaveLocalPath)
-                            {
-                                // 设置照片的缩略图路径
-                                //await Task.Run(() => setPhotoImgPath(photos.ToList()));
-                            }
-
-
                             DispatcherQueue.TryEnqueue(() =>
                             {
                                 // 切换到照片网格视图
@@ -423,7 +417,6 @@ namespace WT_Transfer.Pages
                             //currentPhotos = photos.ToList();
 
                             //如果选中之后退出，再次进入之后，把之前选中的图片给设置选中状态
-
                             DispatcherQueue.TryEnqueue(() =>
                             {
                                 foreach (var group in groupedData)
@@ -436,8 +429,8 @@ namespace WT_Transfer.Pages
                                         }
                                     }
                                 }
-
                             });
+
                             var cvs = new CollectionViewSource
                             {
                                 IsSourceGrouped = true,
@@ -463,7 +456,7 @@ namespace WT_Transfer.Pages
         private ObservableCollection<GroupInfoList> GenerateGroupedData()
         {
             string imageDirectory = @"D:\BaiduNetdiskDownload\val2017";
-            string thumbnailDirectory = Path.Combine(imageDirectory, "thumbnails");
+            string thumbnailDirectory = System.IO.Path.Combine(imageDirectory, "thumbnails");
 
             var groupedData = new ObservableCollection<GroupInfoList>();
 
@@ -474,8 +467,8 @@ namespace WT_Transfer.Pages
                 for (int j = 1; j <= 50; j++)
                 {
                     string imageName = $"Image{j + i}.jpg";
-                    string imagePath = Path.Combine(imageDirectory, imageName);
-                    string thumbnailPath = Path.Combine(thumbnailDirectory, imageName);
+                    string imagePath = System.IO.Path.Combine(imageDirectory, imageName);
+                    string thumbnailPath = System.IO.Path.Combine(thumbnailDirectory, imageName);
 
                     PhotoInfo image = new PhotoInfo
                     {
@@ -629,7 +622,7 @@ namespace WT_Transfer.Pages
 
                 if (storageFolder != null)
                 {
-                    string winPath = storageFolder.Path + "\\" + Path.GetFileName(selectedItem.Title);
+                    string winPath = storageFolder.Path + "\\" + System.IO.Path.GetFileName(selectedItem.Title);
 
                     adbHelper.saveFromPath(musicPath, winPath);
                     ContentDialog appInfoDialog = new ContentDialog
@@ -747,7 +740,10 @@ namespace WT_Transfer.Pages
                 }
             });
 
-            await Init();
+            //await Init();
+            // 更新 transfer 组数据
+            UpdateTransferGroup(files);
+
             // 隐藏进度对话框
             progressDialog.Hide();
 
@@ -759,9 +755,53 @@ namespace WT_Transfer.Pages
             };
             importDialog.XamlRoot = this.Content.XamlRoot;
             await importDialog.ShowAsync();
+
+            RefreshButton_Click(null,null);
         }
 
+        private async void UpdateTransferGroup(IEnumerable<StorageFile> files)
+        {
+            // 查找或创建 transfer 组
+            if (!PhotosInBucket.TryGetValue("transfer", out var transferPhotos))
+            {
+                transferPhotos = new List<PhotoInfo>();
+                PhotosInBucket["transfer"] = transferPhotos;
+            }
 
+
+            List<String> paths = new List<string>();
+            foreach (var file in files)
+            {
+                var photoInfo = new PhotoInfo
+                {
+                    Title = System.IO.Path.GetFileName(file.Name),
+                    Path = $"/sdcard/Pictures/transfer/{file.Name}",
+                    LocalPath = file.Path,
+                    Date = File.GetCreationTime(file.Path).ToString("yyyy-MM-dd")
+                };
+                transferPhotos.Add(photoInfo);
+                Photos.Add(photoInfo);
+                paths.Add(photoInfo.Path);
+            }
+
+            // 提醒手机 新增音乐，扫描
+            Request request = new Request();
+            request.command_id = DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString();
+            request.module = "picture";
+            request.operation = "insert";
+            request.info = new Data
+            {
+                paths = paths,
+            };
+
+            string requestStr = JsonConvert.SerializeObject(request);
+            SocketHelper helper = new SocketHelper();
+            Result result = new Result();
+            await Task.Run(() =>
+            {
+                result = helper.ExecuteOp(requestStr);
+            });
+        }
 
         // 设置图片为壁纸
         private async void SetPhotoToWall_Clicks(object sender, RoutedEventArgs e)
@@ -1223,22 +1263,63 @@ namespace WT_Transfer.Pages
             }
         }
 
+        public enum SortType
+        {
+            TimeCreated,
+            FileSize
+        }
+        private SortType currentSortType = SortType.TimeCreated;
+
         private void SortByTimeCreated_Click(object sender, RoutedEventArgs e)
         {
+            if (currentSortType == SortType.TimeCreated)
+            {
+                UpdateSortType(SortType.FileSize);
+            }
+            else
+            {
+                UpdateSortType(SortType.TimeCreated);
+            }
+
             SetSingleSelection(SortBySubItem, (ToggleMenuFlyoutItem)sender);
-            SortCurrentGroupData(true);
+            currentSortType = SortType.TimeCreated;
+            SortCurrentGroupData();
         }
 
         private void SortByFileSize_Click(object sender, RoutedEventArgs e)
         {
             try
             {
+                if (currentSortType == SortType.TimeCreated)
+                {
+                    UpdateSortType(SortType.FileSize);
+                }
+                else
+                {
+                    UpdateSortType(SortType.TimeCreated);
+                }
                 SetSingleSelection(SortBySubItem, (ToggleMenuFlyoutItem)sender);
+                currentSortType = SortType.FileSize;
                 SortCurrentGroupDataByFileSize();
             }
             catch (Exception ex)
             {
 
+            }
+        }
+
+        private void UpdateSortType(SortType newSortType)
+        {
+            currentSortType = newSortType;
+            if (currentSortType == SortType.TimeCreated)
+            {
+                SortButton2.Content = "Time Created";
+                SortCurrentGroupData();
+            }
+            else if (currentSortType == SortType.FileSize)
+            {
+                SortButton2.Content = "File Size";
+                SortCurrentGroupData();
             }
         }
 
@@ -1248,7 +1329,7 @@ namespace WT_Transfer.Pages
             {
                 foreach (var group in groupedData)
                 {
-                    var sortedItems = group.OrderBy(photo => new FileInfo(photo.Path).Length).ToList();
+                    var sortedItems = group.OrderBy(photo=>photo.Size).ToList();
 
                     group.Clear();
                     foreach (var item in sortedItems)
@@ -1266,6 +1347,7 @@ namespace WT_Transfer.Pages
             }
         }
 
+
         private void SortAscending_Click(object sender, RoutedEventArgs e)
         {
             SetSingleSelection(OrderSubItem, (ToggleMenuFlyoutItem)sender);
@@ -1278,18 +1360,35 @@ namespace WT_Transfer.Pages
             SortCurrentGroupOrder(false);
         }
 
-        private void SortCurrentGroupData(bool byDate)
+        private void SortCurrentGroupData()
         {
             if (groupedData != null && groupedData.Any())
             {
-                var sortedGroups = byDate
-                    ? groupedData.OrderBy(group => DateTime.Parse(group.Key)).ToList()
-                    : groupedData.OrderBy(group => group.Sum(photo => new FileInfo(photo.Path).Length)).ToList();
-
-                groupedData.Clear();
-                foreach (var group in sortedGroups)
+                if (currentSortType == SortType.TimeCreated)
                 {
-                    groupedData.Add(group);
+                    foreach (var group in groupedData)
+                    {
+                        var sortedItems = group.OrderBy(photo => DateTime.Parse(photo.Date)).ToList();
+
+                        group.Clear();
+                        foreach (var item in sortedItems)
+                        {
+                            group.Add(item);
+                        }
+                    }
+                }
+                else if (currentSortType == SortType.FileSize)
+                {
+                    foreach (var group in groupedData)
+                    {
+                        var sortedItems = group.OrderBy(photo => photo.Size).ToList();
+
+                        group.Clear();
+                        foreach (var item in sortedItems)
+                        {
+                            group.Add(item);
+                        }
+                    }
                 }
 
                 var cvs = new CollectionViewSource
@@ -1305,14 +1404,29 @@ namespace WT_Transfer.Pages
         {
             if (groupedData != null && groupedData.Any())
             {
-                var sortedGroups = ascending
-                    ? groupedData.OrderBy(group => group.Key).ToList()
-                    : groupedData.OrderByDescending(group => group.Key).ToList();
-
-                groupedData.Clear();
-                foreach (var group in sortedGroups)
+                if (currentSortType == SortType.TimeCreated)
                 {
-                    groupedData.Add(group);
+                    var sortedGroups = ascending
+                        ? groupedData.OrderBy(group => DateTime.Parse(group.Key)).ToList()
+                        : groupedData.OrderByDescending(group => DateTime.Parse(group.Key)).ToList();
+
+                    groupedData.Clear();
+                    foreach (var group in sortedGroups)
+                    {
+                        groupedData.Add(group);
+                    }
+                }
+                else if (currentSortType == SortType.FileSize)
+                {
+                    var sortedGroups = ascending
+                        ? groupedData.OrderBy(group => group.Sum(photo => int.TryParse(photo.Size, out int size) ? size : 0)).ToList()
+                        : groupedData.OrderByDescending(group => group.Sum(photo => int.TryParse(photo.Size, out int size) ? size : 0)).ToList();
+
+                    groupedData.Clear();
+                    foreach (var group in sortedGroups)
+                    {
+                        groupedData.Add(group);
+                    }
                 }
 
                 var cvs = new CollectionViewSource
@@ -1323,7 +1437,6 @@ namespace WT_Transfer.Pages
                 PhotoGrid.ItemsSource = cvs.View;
             }
         }
-
 
 
         private void UpdatePhotoGrid(string directoryName)
@@ -1732,7 +1845,9 @@ namespace WT_Transfer.Pages
                     {
                         try
                         {
-                            BucketGrid.ItemsSource = albumList.Count == 0 ? AddAlbumList() : albumList;
+                            List<AlbumInfo> albumInfos = albumList;
+                            albumInfos = AddAlbumList();
+                            BucketGrid.ItemsSource = albumInfos;
                             BucketGrid.Visibility = Visibility.Visible;
                         }
                         catch (Exception ex)

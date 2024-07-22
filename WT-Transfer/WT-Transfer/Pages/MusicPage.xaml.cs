@@ -93,6 +93,7 @@ namespace WT_Transfer.Pages
                 this.InitializeComponent();
 
                 this.Loaded += LoadingPage_Loaded;
+                this.SearchBox.TextChanged += SearchBox_TextChanged; // 添加这行
 
                 buttons.Add(ListButton);
                 buttons.Add(SingerButton);
@@ -787,7 +788,7 @@ namespace WT_Transfer.Pages
                 double totalSize = Musics.Sum(m => ExtractSizeInMB(m.size));
 
                 // 更新TextBlock的文本
-                SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2}MB of {totalSize:F2}MB";
+                SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2} MB of {totalSize:F2} MB";
             }
             else if(artistRepeater.Visibility == Visibility)
             {
@@ -803,7 +804,7 @@ namespace WT_Transfer.Pages
                 double totalSize = Musics.Sum(m => ExtractSizeInMB(m.size));
 
                 // 更新TextBlock的文本
-                SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2}MB of {totalSize:F2}MB";
+                SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2} MB of {totalSize:F2} MB";
             }
             else if (albumRepeater.Visibility == Visibility)
             {
@@ -819,7 +820,7 @@ namespace WT_Transfer.Pages
                 double totalSize = Musics.Sum(m => ExtractSizeInMB(m.size));
 
                 // 更新TextBlock的文本
-                SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2}MB of {totalSize:F2}MB";
+                SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2} MB of {totalSize:F2} MB";
             }
 
         }
@@ -836,7 +837,7 @@ namespace WT_Transfer.Pages
                 .Sum(m => ExtractSizeInMB(m.size));
 
             // 更新TextBlock的文本
-            SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - 0MB of {totalSize:F2}MB";
+            SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - 0 MB of {totalSize:F2} MB";
         }
 
 
@@ -1245,6 +1246,16 @@ namespace WT_Transfer.Pages
             // 重新绑定 ItemsRepeater 的 ItemsSource
             musicListRepeater.ItemsSource = SortedMusics;
         }
+
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(SearchBox.Text))
+            {
+                // 如果搜索框为空，则显示所有音乐
+                musicListRepeater.ItemsSource = Musics;
+            }
+        }
+
 
 
     }

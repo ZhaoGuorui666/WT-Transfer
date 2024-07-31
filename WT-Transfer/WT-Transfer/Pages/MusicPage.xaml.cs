@@ -72,6 +72,16 @@ namespace WT_Transfer.Pages
 
         private List<Button> buttons = new List<Button>();
 
+        private enum ViewState
+        {
+            List,
+            Artist,
+            Album
+        }
+
+        private ViewState currentState = ViewState.List;
+
+
         private bool _isAllSelected;
         public bool IsAllSelected
         {
@@ -397,9 +407,133 @@ namespace WT_Transfer.Pages
 
         private async void ExportSelectedMusic_Click(object sender, RoutedEventArgs e)
         {
-            ExportMusics(allMusics: false);
+            if (musicListRepeater.Visibility == Visibility.Visible)
+            {
+                ExportMusics(allMusics: false, selectedMusics: Musics.Where(music => music.IsSelected).ToList());
+            }
+            else if (artistRepeater.Visibility == Visibility.Visible)
+            {
+                var selectedNodes = artistRepeater.SelectedNodes;
+                var selectedMusics = selectedNodes.Where(node => !node.HasChildren)
+                                                  .Select(node => node.Content as MusicInfo)
+                                                  .ToList();
+                ExportMusics(allMusics: false, selectedMusics: selectedMusics);
+            }
+            else if (albumRepeater.Visibility == Visibility.Visible)
+            {
+                var selectedNodes = albumRepeater.SelectedNodes;
+                var selectedMusics = selectedNodes.Where(node => !node.HasChildren)
+                                                  .Select(node => node.Content as MusicInfo)
+                                                  .ToList();
+                ExportMusics(allMusics: false, selectedMusics: selectedMusics);
+            }
+            else
+            {
+                await ShowMessageDialog("No music selected", "Please select at least one music item to export.");
+            }
         }
 
+        private async void ExportMusics(bool allMusics, List<MusicInfo> selectedMusics = null)
+        {
+            try
+            {
+                var filePicker = new FolderPicker();
+                var hWnd = MainWindow.WindowHandle;
+                InitializeWithWindow.Initialize(filePicker, hWnd);
+                filePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+                filePicker.FileTypeFilter.Add("*");
+                Windows.Storage.StorageFolder storageFolder = await filePicker.PickSingleFolderAsync();
+
+                if (storageFolder != null)
+                {
+                    List<MusicInfo> musicsToExport;
+
+                    if (allMusics)
+                    {
+                        // 导出所有音乐的逻辑
+                        musicsToExport = Musics.ToList();
+                    }
+                    else
+                    {
+                        // 导出选中音乐的逻辑
+                        musicsToExport = selectedMusics ?? new List<MusicInfo>();
+                    }
+
+                    // 创建并显示ContentDialog
+                    var progressDialog = new ContentDialog
+                    {
+                        Title = "Exporting Musics",
+                        Content = new StackPanel
+                        {
+                            Children =
+                    {
+                        new ProgressBar
+                        {
+                            Name = "ExportProgressBar",
+                            Minimum = 0,
+                            Maximum = 100,
+                            Width = 300,
+                            Height = 20
+                        },
+                        new TextBlock
+                        {
+                            Name = "ExportProgressText",
+                            Margin = new Thickness(0, 10, 0, 0)
+                        }
+                    }
+                        },
+                        CloseButtonText = "Cancel"
+                    };
+                    progressDialog.XamlRoot = this.Content.XamlRoot;
+                    var progressBar = ((StackPanel)progressDialog.Content).Children[0] as ProgressBar;
+                    var progressText = ((StackPanel)progressDialog.Content).Children[1] as TextBlock;
+
+                    // 显示进度对话框
+                    _ = progressDialog.ShowAsync();
+
+                    await Task.Run(() =>
+                    {
+                        int totalMusics = musicsToExport.Count;
+                        int exportedMusics = 0;
+
+                        foreach (var music in musicsToExport)
+                        {
+                            string path = music.fileUrl;
+                            string localPath = storageFolder.Path + "\\" + music.fileName;
+
+                            adbHelper.saveFromPathWithBlank(path, localPath);
+
+                            exportedMusics++;
+                            double progress = (double)exportedMusics / totalMusics * 100;
+
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
+                                progressBar.Value = progress;
+                                progressText.Text = $"{progress:F1}%";
+                            });
+                        }
+                    });
+
+                    // 关闭ContentDialog
+                    progressDialog.Hide();
+
+                    ContentDialog exportDialog = new ContentDialog
+                    {
+                        Title = "Info",
+                        Content = "Musics export successful.",
+                        PrimaryButtonText = "OK",
+                    };
+                    exportDialog.XamlRoot = this.Content.XamlRoot;
+                    await exportDialog.ShowAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                show_error(ex.ToString());
+                logHelper.Info(logger, ex.ToString());
+                throw;
+            }
+        }
 
         private async void ExportMusics(bool allMusics)
         {
@@ -588,6 +722,7 @@ namespace WT_Transfer.Pages
         //Album按钮
         private void GroupByAlbum_Click(object sender, RoutedEventArgs e)
         {
+            currentState = ViewState.Album;
             // 将所有按钮设置为未选中
             foreach (var btn in buttons)
             {
@@ -617,6 +752,7 @@ namespace WT_Transfer.Pages
         {
             try
             {
+                currentState = ViewState.Artist;
                 // 将所有按钮设置为未选中
                 foreach (var btn in buttons)
                 {
@@ -645,6 +781,8 @@ namespace WT_Transfer.Pages
         //List按钮
         private void ListButton_Click(object sender, RoutedEventArgs e)
         {
+
+            currentState = ViewState.List;
             // 将所有按钮设置为未选中
             foreach (var btn in buttons)
             {
@@ -935,7 +1073,7 @@ namespace WT_Transfer.Pages
         private async void Refresh_Click(object sender, RoutedEventArgs e)
         {
             await RefreshMusicList();
-            ListButton_Click(ListButton, new RoutedEventArgs()); // 模拟点击 ListButton
+            //ListButton_Click(ListButton, new RoutedEventArgs()); // 模拟点击 ListButton
         }
 
         private async Task RefreshMusicList()
@@ -952,8 +1090,68 @@ namespace WT_Transfer.Pages
                 // 重新初始化音乐列表
                 await Init();
 
-                // 更新音乐列表显示
-                musicListRepeater.ItemsSource = Musics;
+                // 清空并重新填充 artistRepeater 和 albumRepeater
+                artistRepeater.RootNodes.Clear();
+                albumRepeater.RootNodes.Clear();
+
+                foreach (var group in MusicsByCreater)
+                {
+                    var singerNode = new TreeViewNode
+                    {
+                        Content = group.Key,
+                        IsExpanded = false
+                    };
+
+                    foreach (var song in group.Items)
+                    {
+                        var songNode = new TreeViewNode
+                        {
+                            Content = song
+                        };
+                        singerNode.Children.Add(songNode);
+                    }
+                    artistRepeater.RootNodes.Add(singerNode);
+                }
+
+                foreach (var group in MusicsByAlbum)
+                {
+                    var albumNode = new TreeViewNode
+                    {
+                        Content = group.Key,
+                        IsExpanded = false
+                    };
+
+                    foreach (var song in group.Items)
+                    {
+                        var songNode = new TreeViewNode
+                        {
+                            Content = song
+                        };
+                        albumNode.Children.Add(songNode);
+                    }
+                    albumRepeater.RootNodes.Add(albumNode);
+                }
+
+                // 保持当前视图状态
+                switch (currentState)
+                {
+                    case ViewState.List:
+                        musicListRepeater.ItemsSource = Musics;
+                        albumRepeater.Visibility = Visibility.Collapsed;
+                        artistRepeater.Visibility = Visibility.Collapsed;
+                        musicListRepeater.Visibility = Visibility.Visible;
+                        break;
+                    case ViewState.Artist:
+                        artistRepeater.Visibility = Visibility.Visible;
+                        albumRepeater.Visibility = Visibility.Collapsed;
+                        musicListRepeater.Visibility = Visibility.Collapsed;
+                        break;
+                    case ViewState.Album:
+                        albumRepeater.Visibility = Visibility.Visible;
+                        artistRepeater.Visibility = Visibility.Collapsed;
+                        musicListRepeater.Visibility = Visibility.Collapsed;
+                        break;
+                }
             }
             catch (Exception ex)
             {

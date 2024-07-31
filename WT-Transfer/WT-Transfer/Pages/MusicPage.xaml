@@ -303,7 +303,7 @@
                     Margin="5"
                     VerticalAlignment="Center"
                     FontWeight="SemiBold"
-                    PointerPressed="SortByName_Click"
+                    PointerPressed="SortBy_Click"
                     Text="Name"
                     TextAlignment="Left" />
                 <TextBlock
@@ -311,6 +311,7 @@
                     Margin="5"
                     VerticalAlignment="Center"
                     FontWeight="SemiBold"
+                    PointerPressed="SortBy_Click"
                     Text="Time"
                     TextAlignment="Left" />
                 <TextBlock
@@ -318,6 +319,7 @@
                     Margin="5"
                     VerticalAlignment="Center"
                     FontWeight="SemiBold"
+                    PointerPressed="SortBy_Click"
                     Text="Artist"
                     TextAlignment="Left" />
                 <TextBlock
@@ -325,6 +327,7 @@
                     Margin="5"
                     VerticalAlignment="Center"
                     FontWeight="SemiBold"
+                    PointerPressed="SortBy_Click"
                     Text="Album"
                     TextAlignment="Left" />
                 <TextBlock
@@ -332,6 +335,7 @@
                     Margin="5"
                     VerticalAlignment="Center"
                     FontWeight="SemiBold"
+                    PointerPressed="SortBy_Click"
                     Text="Size"
                     TextAlignment="Left" />
             </StackPanel>

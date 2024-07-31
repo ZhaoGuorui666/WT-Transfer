@@ -93,6 +93,7 @@ namespace WT_Transfer.Pages
                 this.InitializeComponent();
 
                 this.Loaded += LoadingPage_Loaded;
+                this.SearchBox.TextChanged += SearchBox_TextChanged; // 添加这行
 
                 buttons.Add(ListButton);
                 buttons.Add(SingerButton);
@@ -787,7 +788,7 @@ namespace WT_Transfer.Pages
                 double totalSize = Musics.Sum(m => ExtractSizeInMB(m.size));
 
                 // 更新TextBlock的文本
-                SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2}MB of {totalSize:F2}MB";
+                SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2} MB of {totalSize:F2} MB";
             }
             else if(artistRepeater.Visibility == Visibility)
             {
@@ -803,7 +804,7 @@ namespace WT_Transfer.Pages
                 double totalSize = Musics.Sum(m => ExtractSizeInMB(m.size));
 
                 // 更新TextBlock的文本
-                SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2}MB of {totalSize:F2}MB";
+                SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2} MB of {totalSize:F2} MB";
             }
             else if (albumRepeater.Visibility == Visibility)
             {
@@ -819,7 +820,7 @@ namespace WT_Transfer.Pages
                 double totalSize = Musics.Sum(m => ExtractSizeInMB(m.size));
 
                 // 更新TextBlock的文本
-                SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2}MB of {totalSize:F2}MB";
+                SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - {totalSelectedSize:F2} MB of {totalSize:F2} MB";
             }
 
         }
@@ -836,7 +837,7 @@ namespace WT_Transfer.Pages
                 .Sum(m => ExtractSizeInMB(m.size));
 
             // 更新TextBlock的文本
-            SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - 0MB of {totalSize:F2}MB";
+            SelectedFilesInfo.Text = $"{selectedCount} of {Musics.Count} Item(s) Selected - 0 MB of {totalSize:F2} MB";
         }
 
 
@@ -1229,21 +1230,179 @@ namespace WT_Transfer.Pages
         //点击表头排序
         private bool _isSortedAscending = true;
         public ObservableCollection<MusicInfo> SortedMusics { get; set; } = new ObservableCollection<MusicInfo>();
-        private void SortByName_Click(object sender, RoutedEventArgs e)
+
+        private void SortBy(string columnName)
         {
-            if (_isSortedAscending)
+            if (musicListRepeater.Visibility == Visibility.Visible)
             {
-                SortedMusics = new ObservableCollection<MusicInfo>(Musics.OrderBy(m => m.fileName));
+                SortListView(columnName);
             }
-            else
+            else if (artistRepeater.Visibility == Visibility.Visible)
             {
-                SortedMusics = new ObservableCollection<MusicInfo>(Musics.OrderByDescending(m => m.fileName));
+                SortGroupedItemsBy(columnName, "artist");
+            }
+            else if (albumRepeater.Visibility == Visibility.Visible)
+            {
+                SortGroupedItemsBy(columnName, "album");
             }
 
             _isSortedAscending = !_isSortedAscending;
+        }
 
-            // 重新绑定 ItemsRepeater 的 ItemsSource
-            musicListRepeater.ItemsSource = SortedMusics;
+        private void SortListView(string columnName)
+        {
+            IEnumerable<MusicInfo> sortedList;
+
+            switch (columnName)
+            {
+                case "Name":
+                    sortedList = _isSortedAscending ? Musics.OrderBy(m => m.fileName) : Musics.OrderByDescending(m => m.fileName);
+                    break;
+                case "Time":
+                    sortedList = _isSortedAscending ? Musics.OrderBy(m => m.duration) : Musics.OrderByDescending(m => m.duration);
+                    break;
+                case "Artist":
+                    sortedList = _isSortedAscending ? Musics.OrderBy(m => m.singer) : Musics.OrderByDescending(m => m.singer);
+                    break;
+                case "Album":
+                    sortedList = _isSortedAscending ? Musics.OrderBy(m => m.album) : Musics.OrderByDescending(m => m.album);
+                    break;
+                case "Size":
+                    sortedList = _isSortedAscending ? Musics.OrderBy(m => m.size) : Musics.OrderByDescending(m => m.size);
+                    break;
+                default:
+                    sortedList = Musics;
+                    break;
+            }
+
+            musicListRepeater.ItemsSource = new ObservableCollection<MusicInfo>(sortedList);
+        }
+
+        private void SortGroupedItemsBy(string columnName, string viewType)
+        {
+            var expandedNodes = new Dictionary<string, bool>();
+
+            if (viewType == "artist")
+            {
+                foreach (var group in MusicsByCreater)
+                {
+                    string groupKey = group.Key.ToString();
+                    expandedNodes[groupKey] = GetTreeViewNodeByKey(artistRepeater.RootNodes, groupKey)?.IsExpanded ?? false;
+                    SortGroup(group.Items, columnName);
+                }
+            }
+            else if (viewType == "album")
+            {
+                foreach (var group in MusicsByAlbum)
+                {
+                    string groupKey = group.Key.ToString();
+                    expandedNodes[groupKey] = GetTreeViewNodeByKey(albumRepeater.RootNodes, groupKey)?.IsExpanded ?? false;
+                    SortGroup(group.Items, columnName);
+                }
+            }
+
+            RefreshGroupedViews(viewType, expandedNodes);
+        }
+
+        private void SortGroup(ObservableCollection<MusicInfo> group, string columnName)
+        {
+            IEnumerable<MusicInfo> sortedList;
+
+            switch (columnName)
+            {
+                case "Name":
+                    sortedList = _isSortedAscending ? group.OrderBy(m => m.fileName) : group.OrderByDescending(m => m.fileName);
+                    break;
+                case "Time":
+                    sortedList = _isSortedAscending ? group.OrderBy(m => m.duration) : group.OrderByDescending(m => m.duration);
+                    break;
+                case "Artist":
+                    sortedList = _isSortedAscending ? group.OrderBy(m => m.singer) : group.OrderByDescending(m => m.singer);
+                    break;
+                case "Album":
+                    sortedList = _isSortedAscending ? group.OrderBy(m => m.album) : group.OrderByDescending(m => m.album);
+                    break;
+                case "Size":
+                    sortedList = _isSortedAscending ? group.OrderBy(m => m.size) : group.OrderByDescending(m => m.size);
+                    break;
+                default:
+                    sortedList = group;
+                    break;
+            }
+
+            var sortedGroup = new ObservableCollection<MusicInfo>(sortedList);
+            group.Clear();
+            foreach (var item in sortedGroup)
+            {
+                group.Add(item);
+            }
+        }
+
+        private TreeViewNode GetTreeViewNodeByKey(IList<TreeViewNode> nodes, string key)
+        {
+            foreach (var node in nodes)
+            {
+                if (node.Content.ToString() == key)
+                {
+                    return node;
+                }
+            }
+            return null;
+        }
+
+        private void RefreshGroupedViews(string viewType, Dictionary<string, bool> expandedNodes)
+        {
+            if (viewType == "artist")
+            {
+                artistRepeater.RootNodes.Clear();
+                foreach (var group in MusicsByCreater)
+                {
+                    var singerNode = new TreeViewNode { Content = group.Key };
+                    foreach (var song in group.Items)
+                    {
+                        singerNode.Children.Add(new TreeViewNode { Content = song });
+                    }
+
+                    string groupKey = group.Key.ToString();
+                    singerNode.IsExpanded = expandedNodes.ContainsKey(groupKey) && expandedNodes[groupKey];
+                    artistRepeater.RootNodes.Add(singerNode);
+                }
+            }
+            else if (viewType == "album")
+            {
+                albumRepeater.RootNodes.Clear();
+                foreach (var group in MusicsByAlbum)
+                {
+                    var albumNode = new TreeViewNode { Content = group.Key };
+                    foreach (var song in group.Items)
+                    {
+                        albumNode.Children.Add(new TreeViewNode { Content = song });
+                    }
+
+                    string groupKey = group.Key.ToString();
+                    albumNode.IsExpanded = expandedNodes.ContainsKey(groupKey) && expandedNodes[groupKey];
+                    albumRepeater.RootNodes.Add(albumNode);
+                }
+            }
+        }
+
+        private void SortBy_Click(object sender, RoutedEventArgs e)
+        {
+            var textBlock = sender as TextBlock;
+            if (textBlock != null)
+            {
+                SortBy(textBlock.Text);
+            }
+        }
+
+
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(SearchBox.Text))
+            {
+                // 如果搜索框为空，则显示所有音乐
+                musicListRepeater.ItemsSource = Musics;
+            }
         }
 
 

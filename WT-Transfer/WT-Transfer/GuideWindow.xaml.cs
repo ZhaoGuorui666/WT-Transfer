@@ -70,7 +70,7 @@ namespace WT_Transfer
 
         public static bool isGuideWindow = true;
 
-        public static int ApkVersion = 6;
+        public static int ApkVersion = 7;
         public static string SoftVersion = "1.0";
 
         public static bool disconnected = false;

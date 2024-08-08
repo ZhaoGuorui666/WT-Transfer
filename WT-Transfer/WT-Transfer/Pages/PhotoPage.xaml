@@ -78,21 +78,30 @@
 
         <DataTemplate x:Key="GroupHeaderTemplate">
             <StackPanel Orientation="Horizontal">
-                <CheckBox Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked">
+                <CheckBox
+                    Checked="CheckBox_Checked"
+                    Indeterminate="CheckBox_IndeterminateHandler"
+                    IsThreeState="True"
+                    Tag="{Binding Key}"
+                    Unchecked="CheckBox_Unchecked">
+
                     <CheckBox.Content>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock
                                 FontSize="16"
                                 FontWeight="Bold"
                                 Text="{Binding Key}" />
-                            <TextBlock FontSize="16" Text=" -  " />
+                            <TextBlock
+                                Margin="0,0,5,0"
+                                FontSize="16"
+                                Text="  -" />
                             <TextBlock FontSize="16" Text="{Binding PhotoCount}" />
-                            <TextBlock FontSize="16" Text=" items," />
+                            <TextBlock FontSize="16" Text=" Items, " />
                             <TextBlock
                                 x:Name="SelectedPhotoCountTextBlock"
                                 FontSize="16"
                                 Text="{Binding SelectedCount}" />
-                            <TextBlock FontSize="16" Text=" Selected" />
+                            <TextBlock FontSize="16" Text=" Selected " />
                         </StackPanel>
                     </CheckBox.Content>
                 </CheckBox>

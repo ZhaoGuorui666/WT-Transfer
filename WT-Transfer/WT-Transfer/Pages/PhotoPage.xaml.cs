@@ -39,6 +39,7 @@ using Newtonsoft.Json;
 using static WT_Transfer.SocketModels.Request;
 using System.Threading;
 using Microsoft.UI.Xaml.Shapes;
+using System.Diagnostics;
 
 namespace WT_Transfer.Pages
 {
@@ -1208,7 +1209,7 @@ namespace WT_Transfer.Pages
 
                 }
 
-                PhotoGrid.SelectedItems.Clear();
+                //PhotoGrid.SelectedItems.Clear();
             }
         }
 
@@ -1219,7 +1220,7 @@ namespace WT_Transfer.Pages
                 foreach (var photo in groupInfo)
                 {
                     photo.IsSelected = true;
-                    PhotoGrid.SelectedItems.Add(photo);
+                    //PhotoGrid.SelectedItems.Add(photo);
                 }
             }
         }
@@ -1232,14 +1233,74 @@ namespace WT_Transfer.Pages
             {
                 clickedItem.IsSelected = !clickedItem.IsSelected;
 
-                // 找到包含该项的组并更新选中数量
                 var parentGroup = groupedData.FirstOrDefault(g => g.Contains(clickedItem));
                 if (parentGroup != null)
                 {
-                    parentGroup.OnPropertyChanged(nameof(parentGroup.SelectedCount));
+                    UpdateCheckBoxIndeterminateState(parentGroup.Key);
                 }
             }
         }
+
+        // 方法用于查找具有特定标签的复选框
+        private CheckBox FindCheckBoxByTag(DependencyObject parent, string tag)
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+
+                // 如果子对象是 CheckBox 并且其标签匹配，则返回该复选框
+                if (child is CheckBox checkBox && checkBox.Tag as string == tag)
+                {
+                    return checkBox;
+                }
+
+                // 递归查找子对象的子对象
+                CheckBox result = FindCheckBoxByTag(child, tag);
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+            return null;
+        }
+
+
+        private void UpdateCheckBoxIndeterminateState(string groupKey)
+        {
+            // 寻找与组键关联的CheckBox
+            var checkBox =
+                    FindCheckBoxByTag(this.Content as DependencyObject, groupKey);
+            if (checkBox != null)
+            {
+                // 获取该组中的所有照片
+                var group = groupedData.FirstOrDefault(g => g.Key == groupKey);
+                if (group != null)
+                {
+                    bool allSelected = group.All(photo => photo.IsSelected);
+                    bool anySelected = group.Any(photo => photo.IsSelected);
+
+                    if (!allSelected && anySelected)
+                    {
+                        // 设置为中间状态
+                        checkBox.IsChecked = null;
+                    }else if (allSelected)
+                    {
+                        checkBox.IsChecked = true;
+                    }
+                    else if(!allSelected)
+                    {
+                        checkBox.IsChecked = false;
+                    }
+                }
+            }
+        }
+
+
+        private void CheckBox_IndeterminateHandler(object sender, RoutedEventArgs e)
+        {
+           
+        }
+
 
         private void SortButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1909,6 +1970,7 @@ namespace WT_Transfer.Pages
         public int SelectedCount => this.Count(item => item.IsSelected);
         public event PropertyChangedEventHandler PropertyChanged;
 
+
         public GroupInfoList()
         {
             PhotoInfos = new List<PhotoInfo>();
@@ -1936,7 +1998,5 @@ namespace WT_Transfer.Pages
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-
-
     }
 }

@@ -409,6 +409,11 @@ namespace WT_Transfer.Pages
         {
             if (musicListRepeater.Visibility == Visibility.Visible)
             {
+                if(Musics.Where(music => music.IsSelected).ToList().Count == 0)
+                {
+                    await ShowMessageDialog("No music selected", "Please select at least one music item to export.");
+                    return;
+                }
                 ExportMusics(allMusics: false, selectedMusics: Musics.Where(music => music.IsSelected).ToList());
             }
             else if (artistRepeater.Visibility == Visibility.Visible)
@@ -417,6 +422,11 @@ namespace WT_Transfer.Pages
                 var selectedMusics = selectedNodes.Where(node => !node.HasChildren)
                                                   .Select(node => node.Content as MusicInfo)
                                                   .ToList();
+                if (selectedMusics.Count == 0)
+                {
+                    await ShowMessageDialog("No music selected", "Please select at least one music item to export.");
+                    return;
+                }
                 ExportMusics(allMusics: false, selectedMusics: selectedMusics);
             }
             else if (albumRepeater.Visibility == Visibility.Visible)
@@ -426,10 +436,6 @@ namespace WT_Transfer.Pages
                                                   .Select(node => node.Content as MusicInfo)
                                                   .ToList();
                 ExportMusics(allMusics: false, selectedMusics: selectedMusics);
-            }
-            else
-            {
-                await ShowMessageDialog("No music selected", "Please select at least one music item to export.");
             }
         }
 
@@ -524,7 +530,10 @@ namespace WT_Transfer.Pages
                         PrimaryButtonText = "OK",
                     };
                     exportDialog.XamlRoot = this.Content.XamlRoot;
-                    await exportDialog.ShowAsync();
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        _ = exportDialog.ShowAsync();
+                    });
                 }
             }
             catch (Exception ex)
@@ -544,6 +553,8 @@ namespace WT_Transfer.Pages
                 InitializeWithWindow.Initialize(filePicker, hWnd);
                 filePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
                 filePicker.FileTypeFilter.Add("*");
+
+
                 Windows.Storage.StorageFolder storageFolder = await filePicker.PickSingleFolderAsync();
 
                 if (storageFolder != null)

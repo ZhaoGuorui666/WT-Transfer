@@ -99,6 +99,7 @@ namespace WT_Transfer.Pages
         {
             try
             {
+                    
                 if (this.Photos == null || this.buckets == null || this.PhotosInBucket == null
                     || Photos.Count == 0 || buckets.Count == 0 || PhotosInBucket.Count == 0)
                 {
@@ -127,6 +128,9 @@ namespace WT_Transfer.Pages
                         InitPage();
                     }
                 }
+
+                // 初始化选择状态文本
+                UpdateSelectedFilesInfo();
             }
             catch (Exception ex)
             {
@@ -222,7 +226,18 @@ namespace WT_Transfer.Pages
                                 photoInfo.Bucket = item.Bucket;
                                 photoInfo.Date = item.Date;
                                 photoInfo.Path = item.Path;
-                                photoInfo.Size = item.Size;
+
+                                // 将大小从字节转换为MB
+                                if (double.TryParse(item.Size, out double sizeInBytes))
+                                {
+                                    double sizeInMB = sizeInBytes / (1024 * 1024);
+                                    photoInfo.Size = sizeInMB.ToString("0.## MB"); // 格式化为保留两位小数
+                                }
+                                else
+                                {
+                                    photoInfo.Size = "Unknown Size"; // 如果无法解析，设置为未知
+                                }
+
                                 photoInfo.getTitle();
 
                                 if (item.Bucket == null)
@@ -355,6 +370,27 @@ namespace WT_Transfer.Pages
             return albumList;
         }
 
+        // 更新选择状态信息
+        private void UpdateSelectedFilesInfo()
+        {
+            int selectedCount = Photos.Count(photo => photo.IsSelected);
+            double selectedSizeMB = Photos.Where(photo => photo.IsSelected).Sum(photo => ParseSizeInMB(photo.Size));
+
+            double totalSizeMB = Photos.Sum(photo => ParseSizeInMB(photo.Size));
+            string info = $"{selectedCount} of {Photos.Count} Item(s) Selected - {selectedSizeMB:0.##}MB of {totalSizeMB:0.##}MB";
+            SelectedFilesInfo.Text = info;
+        }
+
+        // 解析大小字符串为MB
+        private double ParseSizeInMB(string sizeString)
+        {
+            string str = sizeString.Replace(" MB", "").Trim();
+            if (double.TryParse(str, out double size))
+            {
+                return size;
+            }
+            return 0;
+        }
         // 双击目录的事件处理方法
         private async void StackPanel_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
@@ -1139,6 +1175,8 @@ namespace WT_Transfer.Pages
                 currentDirectory = "/Pictures";
                 CurrentDirectoryTextBox.Text = currentDirectory;
 
+                // 重置时间范围选择为 "All Time"
+                ResetTimeRangeToAllTime();
             }
             catch (Exception ex)
             {
@@ -1148,6 +1186,22 @@ namespace WT_Transfer.Pages
             }
         }
 
+        // 新增方法以重置时间范围到 "All Time"
+        private void ResetTimeRangeToAllTime()
+        {
+
+            StartDatePicker.Date = null; // All Time 通常表示无界限
+            EndDatePicker.Date = null;
+
+            AllTime.IsChecked = true;
+            ThisWeek.IsChecked = false;
+            ThisMonth.IsChecked = false;
+            LastMonth.IsChecked = false;
+            Last3Months.IsChecked = false;
+            Last6Months.IsChecked = false;
+            ThisYear.IsChecked = false;
+            CustomRange.IsChecked = false;
+        }
 
         // 双击图片的事件处理方法
         private async void StackPanel_DoubleTapped_1(object sender, DoubleTappedRoutedEventArgs e)
@@ -1239,6 +1293,9 @@ namespace WT_Transfer.Pages
                     UpdateCheckBoxIndeterminateState(parentGroup.Key);
                 }
             }
+
+            // 更新选择状态文本
+            UpdateSelectedFilesInfo();
         }
 
         // 方法用于查找具有特定标签的复选框
@@ -1301,6 +1358,12 @@ namespace WT_Transfer.Pages
            
         }
 
+
+        private void Image_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            // 显示与图像关联的Flyout
+            FlyoutBase.ShowAttachedFlyout((FrameworkElement)sender);
+        }
 
         private void SortButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1413,12 +1476,20 @@ namespace WT_Transfer.Pages
         {
             SetSingleSelection(OrderSubItem, (ToggleMenuFlyoutItem)sender);
             SortCurrentGroupOrder(true);
+            SortAscending2.IsChecked = true;
+            SortDescending2.IsChecked = false;
+            SortAscending.IsChecked = true;
+            SortDescending.IsChecked = false;
         }
 
         private void SortDescending_Click(object sender, RoutedEventArgs e)
         {
             SetSingleSelection(OrderSubItem, (ToggleMenuFlyoutItem)sender);
             SortCurrentGroupOrder(false);
+            SortDescending2.IsChecked = true;
+            SortDescending.IsChecked = true;
+            SortAscending2.IsChecked = false;
+            SortAscending.IsChecked = false;
         }
 
         private void SortCurrentGroupData()
@@ -1545,14 +1616,19 @@ namespace WT_Transfer.Pages
         private void FilterByAllTime_Click(object sender, RoutedEventArgs e)
         {
             SetSingleSelection((ToggleMenuFlyoutItem)sender);
+            StartDatePicker.Date = null; // All Time 通常表示无界限
+            EndDatePicker.Date = null;
             FilterPhotosByDateRange(DateTime.MinValue, DateTime.MaxValue);
         }
 
+        // 更新其他方法，以同步日期选择器的值
         private void FilterByThisWeek_Click(object sender, RoutedEventArgs e)
         {
             SetSingleSelection((ToggleMenuFlyoutItem)sender);
             var startOfWeek = DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek);
             var endOfWeek = startOfWeek.AddDays(7).AddSeconds(-1);
+            StartDatePicker.Date = startOfWeek;
+            EndDatePicker.Date = endOfWeek;
             FilterPhotosByDateRange(startOfWeek, endOfWeek);
         }
 
@@ -1561,6 +1637,8 @@ namespace WT_Transfer.Pages
             SetSingleSelection((ToggleMenuFlyoutItem)sender);
             var startOfMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
             var endOfMonth = startOfMonth.AddMonths(1).AddSeconds(-1);
+            StartDatePicker.Date = startOfMonth;
+            EndDatePicker.Date = endOfMonth;
             FilterPhotosByDateRange(startOfMonth, endOfMonth);
         }
 
@@ -1569,6 +1647,8 @@ namespace WT_Transfer.Pages
             SetSingleSelection((ToggleMenuFlyoutItem)sender);
             var startOfLastMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1);
             var endOfLastMonth = startOfLastMonth.AddMonths(1).AddSeconds(-1);
+            StartDatePicker.Date = startOfLastMonth;
+            EndDatePicker.Date = endOfLastMonth;
             FilterPhotosByDateRange(startOfLastMonth, endOfLastMonth);
         }
 
@@ -1576,14 +1656,20 @@ namespace WT_Transfer.Pages
         {
             SetSingleSelection((ToggleMenuFlyoutItem)sender);
             var startOfLast3Months = DateTime.Today.AddMonths(-3);
-            FilterPhotosByDateRange(startOfLast3Months, DateTime.Today);
+            var endOfLast3Months = DateTime.Today;
+            StartDatePicker.Date = startOfLast3Months;
+            EndDatePicker.Date = endOfLast3Months;
+            FilterPhotosByDateRange(startOfLast3Months, endOfLast3Months);
         }
 
         private void FilterByLast6Months_Click(object sender, RoutedEventArgs e)
         {
             SetSingleSelection((ToggleMenuFlyoutItem)sender);
             var startOfLast6Months = DateTime.Today.AddMonths(-6);
-            FilterPhotosByDateRange(startOfLast6Months, DateTime.Today);
+            var endOfLast6Months = DateTime.Today;
+            StartDatePicker.Date = startOfLast6Months;
+            EndDatePicker.Date = endOfLast6Months;
+            FilterPhotosByDateRange(startOfLast6Months, endOfLast6Months);
         }
 
         private void FilterByThisYear_Click(object sender, RoutedEventArgs e)
@@ -1591,8 +1677,22 @@ namespace WT_Transfer.Pages
             SetSingleSelection((ToggleMenuFlyoutItem)sender);
             var startOfYear = new DateTime(DateTime.Today.Year, 1, 1);
             var endOfYear = startOfYear.AddYears(1).AddSeconds(-1);
+            StartDatePicker.Date = startOfYear;
+            EndDatePicker.Date = endOfYear;
             FilterPhotosByDateRange(startOfYear, endOfYear);
         }
+
+        private void FilterByCustomRange_Click(object sender, RoutedEventArgs e)
+        {
+            SetSingleSelection((ToggleMenuFlyoutItem)sender);
+            if (StartDatePicker.Date.HasValue && EndDatePicker.Date.HasValue)
+            {
+                DateTime startDate = StartDatePicker.Date.Value.DateTime;
+                DateTime endDate = EndDatePicker.Date.Value.DateTime;
+                FilterPhotosByDateRange(startDate, endDate);
+            }
+        }
+
 
         private void FilterPhotosByDateRange(DateTime startDate, DateTime endDate)
         {
@@ -1668,10 +1768,43 @@ namespace WT_Transfer.Pages
             ExportPhotos(allPhotos: false);
         }
 
+        private async Task ShowMessageDialog(string title, string content)
+        {
+            ContentDialog messageDialog = new ContentDialog
+            {
+                Title = title,
+                Content = content,
+                CloseButtonText = "OK"
+            };
+
+            messageDialog.XamlRoot = this.Content.XamlRoot;
+            await messageDialog.ShowAsync();
+        }
+
         private async void ExportPhotos(bool allPhotos)
         {
             try
             {
+                List<PhotoInfo> photosToExport;
+
+                if (allPhotos)
+                {
+                    // 导出所有图片的逻辑
+                    photosToExport = Photos;
+                }
+                else
+                {
+                    // 导出选中图片的逻辑
+                    photosToExport = Photos.Where(photo => photo.IsSelected).ToList();
+
+                    // 如果没有选择照片，提示用户
+                    if (photosToExport.Count == 0)
+                    {
+                        await ShowMessageDialog("No photo selected", "Please select at least one photo item to export.");
+                        return;
+                    }
+                }
+
                 var filePicker = new FolderPicker();
                 var hWnd = MainWindow.WindowHandle;
                 InitializeWithWindow.Initialize(filePicker, hWnd);
@@ -1681,18 +1814,6 @@ namespace WT_Transfer.Pages
 
                 if (storageFolder != null)
                 {
-                    List<PhotoInfo> photosToExport;
-
-                    if (allPhotos)
-                    {
-                        // 导出所有图片的逻辑
-                        photosToExport = Photos;
-                    }
-                    else
-                    {
-                        // 导出选中图片的逻辑
-                        photosToExport = Photos.Where(photo => photo.IsSelected).ToList();
-                    }
                     // 创建并显示ContentDialog
                     var progressDialog = new ContentDialog
                     {

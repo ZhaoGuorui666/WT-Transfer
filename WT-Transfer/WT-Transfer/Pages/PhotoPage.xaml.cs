@@ -1261,10 +1261,19 @@ namespace WT_Transfer.Pages
                 {
                     photo.IsSelected = false;
 
+                    // 在 PhotoGrid.SelectedItems 中找到对应的项并取消选中
+                    if (PhotoGrid.SelectedItems.Contains(photo))
+                    {
+                        PhotoGrid.SelectedItems.Remove(photo);
+                    }
                 }
 
                 //PhotoGrid.SelectedItems.Clear();
             }
+
+
+            // 更新选择状态文本
+            UpdateSelectedFilesInfo();
         }
 
         private void CheckBox_Checked(object sender, RoutedEventArgs e)
@@ -1274,9 +1283,13 @@ namespace WT_Transfer.Pages
                 foreach (var photo in groupInfo)
                 {
                     photo.IsSelected = true;
-                    //PhotoGrid.SelectedItems.Add(photo);
+                    PhotoGrid.SelectedItems.Add(photo);
                 }
             }
+
+
+            // 更新选择状态文本
+            UpdateSelectedFilesInfo();
         }
 
         //选中某项
@@ -1285,17 +1298,36 @@ namespace WT_Transfer.Pages
             var clickedItem = e.ClickedItem as PhotoInfo;
             if (clickedItem != null)
             {
-                clickedItem.IsSelected = !clickedItem.IsSelected;
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    clickedItem.IsSelected = !clickedItem.IsSelected;
+                    if(clickedItem.IsSelected == true)
+                    {
+                        PhotoGrid.SelectedItems.Add(clickedItem);
+                    }
+                    else
+                    {
+                        if (PhotoGrid.SelectedItems.Contains(clickedItem)){
+                            PhotoGrid.SelectedItems.Remove(clickedItem);
+                        }
+                    }
+                });
 
                 var parentGroup = groupedData.FirstOrDefault(g => g.Contains(clickedItem));
                 if (parentGroup != null)
                 {
-                    UpdateCheckBoxIndeterminateState(parentGroup.Key);
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        UpdateCheckBoxIndeterminateState(parentGroup.Key);
+                    });
                 }
             }
 
-            // 更新选择状态文本
-            UpdateSelectedFilesInfo();
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                // 更新选择状态文本
+                UpdateSelectedFilesInfo();
+            });
         }
 
         // 方法用于查找具有特定标签的复选框
@@ -1355,7 +1387,15 @@ namespace WT_Transfer.Pages
 
         private void CheckBox_IndeterminateHandler(object sender, RoutedEventArgs e)
         {
-           
+            if (sender is CheckBox checkBox && checkBox.DataContext is GroupInfoList groupInfo)
+            {
+                if (groupInfo.CheckAllSelected())
+                {
+                    // 如果全部选中，取消选中所有
+                    groupInfo.SetAllSelected(false);
+                    checkBox.IsChecked = false;
+                }
+            }
         }
 
 
@@ -2118,6 +2158,19 @@ namespace WT_Transfer.Pages
         public void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public bool CheckAllSelected()
+        {
+            return this.All(photo => photo.IsSelected);
+        }
+
+        public void SetAllSelected(bool selected)
+        {
+            foreach (var photo in this)
+            {
+                photo.IsSelected = selected;
+            }
         }
     }
 }

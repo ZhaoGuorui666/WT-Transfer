@@ -1442,6 +1442,7 @@ namespace WT_Transfer.Pages
 
         private void SortBy(string columnName)
         {
+
             if (musicListRepeater.Visibility == Visibility.Visible)
             {
                 SortListView(columnName);
@@ -1458,25 +1459,48 @@ namespace WT_Transfer.Pages
             _isSortedAscending = !_isSortedAscending;
         }
 
+
+        private void ClearAllSortIcons()
+        {
+            NameSortIcon.Text = string.Empty;
+            TimeSortIcon.Text = string.Empty;
+            ArtistSortIcon.Text = string.Empty;
+            AlbumSortIcon.Text = string.Empty;
+            SizeSortIcon.Text = string.Empty;
+        }
+
+
         private void SortListView(string columnName)
         {
             IEnumerable<MusicInfo> sortedList;
 
+            // 先清空所有的排序图标
+            ClearAllSortIcons();
+
+            // 根据点击的列头确定要显示的图标
+            string glyph = _isSortedAscending ? "\uEB11" : "\uEB0F"; // StockUp or StockDown
+
+
             switch (columnName)
             {
                 case "Name":
+                    NameSortIcon.Text = glyph;
                     sortedList = _isSortedAscending ? Musics.OrderBy(m => m.fileName) : Musics.OrderByDescending(m => m.fileName);
                     break;
                 case "Time":
+                    TimeSortIcon.Text = glyph;
                     sortedList = _isSortedAscending ? Musics.OrderBy(m => m.duration) : Musics.OrderByDescending(m => m.duration);
                     break;
                 case "Artist":
+                    ArtistSortIcon.Text = glyph;
                     sortedList = _isSortedAscending ? Musics.OrderBy(m => m.singer) : Musics.OrderByDescending(m => m.singer);
                     break;
                 case "Album":
+                    AlbumSortIcon.Text = glyph;
                     sortedList = _isSortedAscending ? Musics.OrderBy(m => m.album) : Musics.OrderByDescending(m => m.album);
                     break;
                 case "Size":
+                    SizeSortIcon.Text = glyph;
                     sortedList = _isSortedAscending ? Musics.OrderBy(m => m.size) : Musics.OrderByDescending(m => m.size);
                     break;
                 default:
@@ -1490,6 +1514,9 @@ namespace WT_Transfer.Pages
         private void SortGroupedItemsBy(string columnName, string viewType)
         {
             var expandedNodes = new Dictionary<string, bool>();
+
+            
+
 
             if (viewType == "artist")
             {
@@ -1516,22 +1543,34 @@ namespace WT_Transfer.Pages
         private void SortGroup(ObservableCollection<MusicInfo> group, string columnName)
         {
             IEnumerable<MusicInfo> sortedList;
+            // 先清空所有的排序图标
+            ClearAllSortIcons();
+
+            // 根据点击的列头确定要显示的图标
+            string glyph = _isSortedAscending ? "\uEB11" : "\uEB0F"; // StockUp or StockDown
+
 
             switch (columnName)
             {
                 case "Name":
+
+                    NameSortIcon.Text = glyph;
                     sortedList = _isSortedAscending ? group.OrderBy(m => m.fileName) : group.OrderByDescending(m => m.fileName);
                     break;
                 case "Time":
+                    TimeSortIcon.Text = glyph;
                     sortedList = _isSortedAscending ? group.OrderBy(m => m.duration) : group.OrderByDescending(m => m.duration);
                     break;
                 case "Artist":
+                    ArtistSortIcon.Text = glyph;
                     sortedList = _isSortedAscending ? group.OrderBy(m => m.singer) : group.OrderByDescending(m => m.singer);
                     break;
                 case "Album":
+                    AlbumSortIcon.Text = glyph;
                     sortedList = _isSortedAscending ? group.OrderBy(m => m.album) : group.OrderByDescending(m => m.album);
                     break;
                 case "Size":
+                    SizeSortIcon.Text = glyph;
                     sortedList = _isSortedAscending ? group.OrderBy(m => m.size) : group.OrderByDescending(m => m.size);
                     break;
                 default:

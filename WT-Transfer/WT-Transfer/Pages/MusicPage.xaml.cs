@@ -548,12 +548,12 @@ namespace WT_Transfer.Pages
         {
             try
             {
+                String MusicBackupPath = (string)ApplicationData.Current.LocalSettings.Values[MainWindow.Setting_MusicBackupPath];
                 var filePicker = new FolderPicker();
                 var hWnd = MainWindow.WindowHandle;
                 InitializeWithWindow.Initialize(filePicker, hWnd);
-                filePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+                filePicker.SuggestedStartLocation = PickerLocationId.MusicLibrary;
                 filePicker.FileTypeFilter.Add("*");
-
 
                 Windows.Storage.StorageFolder storageFolder = await filePicker.PickSingleFolderAsync();
 

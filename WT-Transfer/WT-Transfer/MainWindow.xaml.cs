@@ -65,6 +65,8 @@ namespace WT_Transfer
         public static String Setting_MusicBackupPath; // 配置文件中的存储 音乐备份路径 的地址
         public static string PhotoBackupPath;      //照片备份路径
         public static String Setting_PhotoBackupPath; // 配置文件中的存储 照片备份路径 的地址v
+        public static string VideoBackupPath;      //照片备份路径
+        public static String Setting_VideoBackupPath; // 配置文件中的存储 照片备份路径 的地址v
         public static string SmsBackupPath;      //短信备份路径
         public static String Setting_SmsBackupPath; // 配置文件中的存储 短信备份路径 的地址
         public static string RootDirBackUpPath;      //根路径 备份路径
@@ -114,8 +116,11 @@ namespace WT_Transfer
         public static Dictionary<DateTime, List<Calendar>> CalendarDic { get; set; }
         public static List<CalendarByDate> calendarByDates { get; set; }
         public static List<PhotoInfo> Photos { get; set; }
+        public static List<VideoInfo> Videos { get; set; }
         public static List<PhotoInfo> PhotosSorted { get; set; }
         public static Dictionary<string, List<PhotoInfo>> PhotosInBucket { get; set; }
+        public static List<VideoInfo> VideosSorted { get; set; }
+        public static Dictionary<string, List<VideoInfo>> VideosInBucket { get; set; }
         public static HashSet<String> buckets { get; set; }
         public static ObservableCollection<MusicInfo> Musics { get; set; }
         public static ObservableCollection<MusicInfoGroup> MusicsByCreater
@@ -295,7 +300,8 @@ namespace WT_Transfer
                 else if ((string)selectedItem.Tag == "OperationLog") contentFrame.Navigate(typeof(OperationLog));
                 else if ((string)selectedItem.Tag == "SettingPage") contentFrame.Navigate(typeof(SettingPage));
                 else if ((string)selectedItem.Tag == "Music") contentFrame.Navigate(typeof(MusicPage));
-                else if ((string)selectedItem.Tag == "Photo") contentFrame.Navigate(typeof(PhotoPage));
+                else if ((string)selectedItem.Tag == "Photo") contentFrame.Navigate(typeof(PhotoPage), "Photo");
+                else if ((string)selectedItem.Tag == "Video") contentFrame.Navigate(typeof(VideoPage), "Video");
                 else if ((string)selectedItem.Tag == "Apps") contentFrame.Navigate(typeof(AppPage));
                 else if ((string)selectedItem.Tag == "BackupSettings") contentFrame.Navigate(typeof(BackupSetting));
                 else if ((string)selectedItem.Tag == "test") contentFrame.Navigate(typeof(TestPage));

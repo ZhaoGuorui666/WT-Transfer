@@ -199,6 +199,8 @@ namespace WT_Transfer.Pages
                             JArray jArray = JArray.Parse(str);
                             // 使用 LINQ 查询获取 DisplayName 和 MobileNum
                             var resultArray = (from item in jArray
+                                               let extension = System.IO.Path.GetExtension(item["path"]?.ToString()).ToLower()
+                                               where extension == ".jpg" || extension == ".jpeg" || extension == ".png" || extension == ".bmp" || extension == ".gif" || extension == ".tiff"
                                                select new
                                                {
                                                    Bucket = item["bucket"]?.ToString(),
@@ -206,7 +208,8 @@ namespace WT_Transfer.Pages
                                                    Path = item["path"]?.ToString(),
                                                    Size = item["size"]?.ToString(),
                                                })
-                                            .ToArray();
+                            .ToArray();
+
 
                             // 统计文件夹数量
                             foreach (var item in resultArray)

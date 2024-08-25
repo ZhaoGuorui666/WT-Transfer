@@ -411,7 +411,7 @@ namespace WT_Transfer.Pages
             {
                 if(Musics.Where(music => music.IsSelected).ToList().Count == 0)
                 {
-                    await ShowMessageDialog("No music selected", "Please select at least one music item to export.");
+                    await ShowMessageDialog("No music selected", "No music files have been selected for export.\r\nPlease select the music files you want to export and try again.");
                     return;
                 }
                 ExportMusics(allMusics: false, selectedMusics: Musics.Where(music => music.IsSelected).ToList());
@@ -424,7 +424,7 @@ namespace WT_Transfer.Pages
                                                   .ToList();
                 if (selectedMusics.Count == 0)
                 {
-                    await ShowMessageDialog("No music selected", "Please select at least one music item to export.");
+                    await ShowMessageDialog("No music selected", "No music files have been selected for export.\r\nPlease select the music files you want to export and try again.");
                     return;
                 }
                 ExportMusics(allMusics: false, selectedMusics: selectedMusics);
@@ -468,7 +468,7 @@ namespace WT_Transfer.Pages
                     // 创建并显示ContentDialog
                     var progressDialog = new ContentDialog
                     {
-                        Title = "Exporting Musics",
+                        Title = "Exporting Music",
                         Content = new StackPanel
                         {
                             Children =
@@ -525,11 +525,17 @@ namespace WT_Transfer.Pages
 
                     ContentDialog exportDialog = new ContentDialog
                     {
-                        Title = "Info",
-                        Content = "Musics export successful.",
-                        PrimaryButtonText = "OK",
+                        Title = "Export Complete",
+                        Content = "Your music has been successfully exported to the designated folder.",
+                        PrimaryButtonText = "View Folder",
+                        SecondaryButtonText = "OK",
                     };
                     exportDialog.XamlRoot = this.Content.XamlRoot;
+                    // 打开文件夹的操作
+                    exportDialog.PrimaryButtonClick += async (s, args) =>
+                    {
+                        await Windows.System.Launcher.LaunchFolderPathAsync(storageFolder.Path);
+                    };
                     DispatcherQueue.TryEnqueue(() =>
                     {
                         _ = exportDialog.ShowAsync();
@@ -574,7 +580,7 @@ namespace WT_Transfer.Pages
                     // 创建并显示ContentDialog
                     var progressDialog = new ContentDialog
                     {
-                        Title = "Exporting Musics",
+                        Title = "Exporting Music",
                         Content = new StackPanel
                         {
                             Children =
@@ -633,11 +639,18 @@ namespace WT_Transfer.Pages
 
                     ContentDialog exportDialog = new ContentDialog
                     {
-                        Title = "Info",
-                        Content = "Musics export successful.",
-                        PrimaryButtonText = "OK",
+                        Title = "Export Complete",
+                        Content = "Your music has been successfully exported to the designated folder.",
+                        PrimaryButtonText = "View Folder",
+                        SecondaryButtonText = "OK",
+                        DefaultButton = ContentDialogButton.Secondary // 设置OK为默认按钮
                     };
                     exportDialog.XamlRoot = this.Content.XamlRoot;
+                    // 打开文件夹的操作
+                    exportDialog.PrimaryButtonClick += async (s, args) =>
+                    {
+                        await Windows.System.Launcher.LaunchFolderPathAsync(storageFolder.Path);
+                    };
                     await exportDialog.ShowAsync();
                 }
             }
@@ -818,12 +831,12 @@ namespace WT_Transfer.Pages
             var selectedMusics = Musics.Where(m => m.IsSelected).ToList();
             if (!selectedMusics.Any())
             {
-                await ShowMessageDialog("No music selected", "Please select at least one music item to delete.");
+                await ShowMessageDialog("No music selected", "No music files have been selected for export.\r\nPlease select the music files you want to export and try again.");
                 return;
             }
 
             // 确认删除
-            bool isConfirmed = await ShowConfirmationDialog("Confirm Deletion", $"Are you sure you want to delete {selectedMusics.Count} selected item(s)?");
+            bool isConfirmed = await ShowConfirmationDialog("Confirm Deletion", $"Are you sure you want to delete the selected music? This action cannot be undone.");
             if (!isConfirmed)
             {
                 return;
@@ -864,7 +877,7 @@ namespace WT_Transfer.Pages
             ContentDialog appInfoDialog = new ContentDialog
             {
                 Title = "Info",
-                Content = "Music successfully deleted",
+                Content = "The selected music files have been successfully deleted.",
                 PrimaryButtonText = "OK",
             };
             appInfoDialog.XamlRoot = this.Content.XamlRoot;
@@ -1429,7 +1442,7 @@ namespace WT_Transfer.Pages
             ContentDialog importDialog = new ContentDialog
             {
                 Title = "Info",
-                Content = "Files import successful.",
+                Content = "Your files have been successfully imported.",
                 PrimaryButtonText = "OK",
             };
             importDialog.XamlRoot = this.Content.XamlRoot;

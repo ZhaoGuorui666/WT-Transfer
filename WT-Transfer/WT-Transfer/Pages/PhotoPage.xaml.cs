@@ -790,7 +790,7 @@ namespace WT_Transfer.Pages
             ContentDialog importDialog = new ContentDialog
             {
                 Title = "Info",
-                Content = "Files import successful.",
+                Content = "Your files have been successfully imported.",
                 PrimaryButtonText = "OK",
             };
             importDialog.XamlRoot = this.Content.XamlRoot;
@@ -1095,7 +1095,7 @@ namespace WT_Transfer.Pages
                         ContentDialog deleteDialog = new ContentDialog
                         {
                             Title = "Delete Photo",
-                            Content = "Are you sure you want to delete this photo?",
+                            Content = "Are you sure you want to delete the selected photo(s)? This action cannot be undone.",
                             PrimaryButtonText = "Delete",
                             SecondaryButtonText = "Cancel"
                         };
@@ -1843,7 +1843,7 @@ namespace WT_Transfer.Pages
                     // 如果没有选择照片，提示用户
                     if (photosToExport.Count == 0)
                     {
-                        await ShowMessageDialog("No photo selected", "Please select at least one photo item to export.");
+                        await ShowMessageDialog("No photo selected", "No photos have been selected for export.\r\nPlease select the photos you want to export and try again.");
                         return;
                     }
                 }
@@ -1920,10 +1920,16 @@ namespace WT_Transfer.Pages
                     ContentDialog exportDialog = new ContentDialog
                     {
                         Title = "Info",
-                        Content = "Photos export successful.",
-                        PrimaryButtonText = "OK",
+                        Content = "Your photos has been successfully exported to the designated folder.",
+                        PrimaryButtonText = "View Folder",
+                        SecondaryButtonText = "OK",
+                        DefaultButton = ContentDialogButton.Secondary // 设置OK为默认按钮
                     };
                     exportDialog.XamlRoot = this.Content.XamlRoot;
+                    exportDialog.SecondaryButtonClick += async (s, args) =>
+                    {
+                        await Windows.System.Launcher.LaunchFolderPathAsync(storageFolder.Path);
+                    };
                     await exportDialog.ShowAsync();
                 }
             }
@@ -1949,7 +1955,7 @@ namespace WT_Transfer.Pages
                         ContentDialog deleteDialog = new ContentDialog
                         {
                             Title = "Delete Photos",
-                            Content = "Are you sure you want to delete the selected photos?",
+                            Content = "Are you sure you want to delete the selected photo(s)? This action cannot be undone.",
                             PrimaryButtonText = "Delete",
                             SecondaryButtonText = "Cancel"
                         };
@@ -2013,7 +2019,7 @@ namespace WT_Transfer.Pages
                             ContentDialog successDialog = new ContentDialog
                             {
                                 Title = "Success",
-                                Content = "Selected photos deleted successfully.",
+                                Content = "The selected photos have been successfully deleted.",
                                 PrimaryButtonText = "OK"
                             };
                             successDialog.XamlRoot = this.Content.XamlRoot;

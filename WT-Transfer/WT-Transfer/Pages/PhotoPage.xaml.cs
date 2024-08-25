@@ -377,7 +377,7 @@ namespace WT_Transfer.Pages
             double selectedSizeMB = Photos.Where(photo => photo.IsSelected).Sum(photo => ParseSizeInMB(photo.Size));
 
             double totalSizeMB = Photos.Sum(photo => ParseSizeInMB(photo.Size));
-            string info = $"{selectedCount} of {Photos.Count} Item(s) Selected - {selectedSizeMB:0.##}MB of {totalSizeMB:0.##}MB";
+            string info = $"{selectedCount} of {Photos.Count} Item(s) Selected - {selectedSizeMB:0.##} MB of {totalSizeMB:0.##} MB";
             SelectedFilesInfo.Text = info;
         }
 

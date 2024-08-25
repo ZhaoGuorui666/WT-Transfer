@@ -323,7 +323,7 @@
                         Margin="10,12,0,0"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center"
-                        Text="0 of 0 Item(s) Selected - 0MB of 0MB" />
+                        Text="0 of 0 Item(s) Selected - 0 MB of 0 MB" />
                 </Grid>
 
                 <Grid>

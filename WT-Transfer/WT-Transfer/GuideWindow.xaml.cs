@@ -32,6 +32,7 @@ using Windows.UI.Popups;
 using WinRT.Interop;
 using WT_Transfer.Dialog;
 using WT_Transfer.Helper;
+using WT_Transfer.Models;
 using WT_Transfer.Pages;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -54,6 +55,7 @@ namespace WT_Transfer
         public static string Serial;
 
         public static List<DeviceData> devices;
+        public List<DeviceData> Devices { get; set; }
         public static string PackageName = "com.example.contacts";
         public static string localPath = ApplicationData.Current.LocalFolder.Path;
 
@@ -75,6 +77,10 @@ namespace WT_Transfer
 
         public static bool disconnected = false;
         public static IntPtr WindowHandle { get; private set; }
+
+
+        public DeviceData SelectedDevice { get; private set; }
+
         public GuideWindow()
         {
 
@@ -99,11 +105,12 @@ namespace WT_Transfer
                 BitmapImage bitmapImage = new BitmapImage();
                 bitmapImage.UriSource =
                     new Uri(DefaultPath, UriKind.RelativeOrAbsolute);
-                codeImg.Source = bitmapImage;
+
+                //codeImg.Source = bitmapImage;
 
                 //软件版本
-                SoftwareVersion.Text = "Software version: "+ SoftVersion;
-                AppVersion.Text = "App version: 1."+ (ApkVersion - 1);
+                //SoftwareVersion.Text = "Software version: "+ SoftVersion;
+                //AppVersion.Text = "App version: 1."+ (ApkVersion - 1);
             }
             catch (Exception ex)
             {
@@ -224,14 +231,7 @@ namespace WT_Transfer
                         DispatcherQueue.TryEnqueue(async () =>
                         {
                             AppInstall.Hide();
-                            ContentDialog appInfoDialog = new ContentDialog
-                            {
-                                Title = "Info",
-                                Content = "Successfully installed the app.",
-                                PrimaryButtonText = "OK",
-                            };
-                            appInfoDialog.XamlRoot = this.Content.XamlRoot;
-                            await appInfoDialog.ShowAsync();
+                            AppInstallDialog.ShowAsync();
                         });
                     });
 
@@ -368,42 +368,14 @@ namespace WT_Transfer
             try
             {
                 devices = client.GetDevices();
-                if (devices.Count == 0)
+                this.Devices = devices;
+                DeviceComboBox.ItemsSource = Devices;
+                // 如果有设备，默认选中第一个
+                if (Devices != null && Devices.Count > 0)
                 {
-                    //无设备连接
-                    Console.WriteLine("The device cannot be detected currently. Please check whether the device is connected or whether the Debug menu is enabled.");
-                    //show_error
-                    //    ("The device cannot be detected currently. Please check whether the device is connected or whether the Debug menu is enabled.");
+                    DeviceComboBox.SelectedIndex = 0;
                 }
-                else if (devices.Count == 1 && 
-                    devices.FirstOrDefault().State == DeviceState.Online)
-                {
-                    //Todo
-                    //device = devices.FirstOrDefault();
-                    //Serial = device.Serial;
-                    // 开对话框，选择设备，初始化device
-                    ContentDialog dialog = new ContentDialog();
-
-                    dialog.XamlRoot = this.Content.XamlRoot;
-                    dialog.Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style;
-                    dialog.Title = "Switch Deivce";
-                    dialog.Content = new SwitchDevice(dialog);
-
-                    await dialog.ShowAsync();
-                }
-                else if (devices.Count == 2)
-                {
-                    //弹窗初始化
-                    // 开对话框，选择设备，初始化device
-                    ContentDialog dialog = new ContentDialog();
-
-                    dialog.XamlRoot = this.Content.XamlRoot;
-                    dialog.Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style;
-                    dialog.Title = "Switch Deivce";
-                    dialog.Content = new SwitchDevice(dialog);
-
-                    await dialog.ShowAsync();
-                }
+                await AndroidDeviceSelectionDialog.ShowAsync();
             }
             catch (Exception ex)
             {
@@ -464,5 +436,40 @@ namespace WT_Transfer
             USBDebuggWindow uSBDebuggWindow = new USBDebuggWindow();
             uSBDebuggWindow.Activate();
         }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            AppInstall.ShowAsync();
+
+        }
+
+        private void CloseAppInstallDialog(object sender, RoutedEventArgs e)
+        {
+            AppInstallDialog.Hide();
+            AppInstall.Hide();
+        }
+
+        private void AndroidDeviceSelectionDialog_PrimaryButtonClick(object sender, RoutedEventArgs e)
+        {
+            SelectedDevice = DeviceComboBox.SelectedItem as DeviceData;
+            if (SelectedDevice != null)
+            {
+                GuideWindow.device = SelectedDevice;
+                GuideWindow.Serial = SelectedDevice.Serial;
+                GuideWindow.DeviceName = SelectedDevice.Name.ToString();
+
+                // 确保你正确关闭或隐藏对话框
+                AndroidDeviceSelectionDialog.Hide();
+            }
+            else
+            {
+                // 如果没有选中设备，显示一个错误消息或者做相应处理
+                show_error("No device selected. Please select a device.");
+            }
+        }
+
+
     }
+
+
 }

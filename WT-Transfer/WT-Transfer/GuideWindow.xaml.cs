@@ -437,12 +437,6 @@ namespace WT_Transfer
             uSBDebuggWindow.Activate();
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            AppInstall.ShowAsync();
-
-        }
-
         private void CloseAppInstallDialog(object sender, RoutedEventArgs e)
         {
             AppInstallDialog.Hide();

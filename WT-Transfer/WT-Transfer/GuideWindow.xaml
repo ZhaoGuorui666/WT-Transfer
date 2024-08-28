@@ -76,9 +76,6 @@
                         Content="Connect Device"
                         FontSize="16"
                         Style="{StaticResource AccentButtonStyle}" />
-
-
-                    <Button Click="Button_Click" Content="test" />
                 </StackPanel>
 
             </StackPanel>
@@ -170,6 +167,8 @@
                     Margin="0,40,0,0"
                     HorizontalAlignment="Center"
                     Background="DodgerBlue"
+                    Height="40"
+                    Width="220"
                     Click="AndroidDeviceSelectionDialog_PrimaryButtonClick"
                     Content="Confirm and Connect"
                     Foreground="White" />

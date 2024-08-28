@@ -297,48 +297,93 @@
                     Checked="SelectAllCheckBox_Checked"
                     IsChecked="{x:Bind IsAllSelected, Mode=TwoWay}"
                     Unchecked="SelectAllCheckBox_Unchecked" />
-                <!--  占位符，无需实际选择  -->
-                <TextBlock
-                    Width="350"
-                    Margin="5"
-                    VerticalAlignment="Center"
-                    FontWeight="SemiBold"
-                    PointerPressed="SortBy_Click"
-                    Text="Name"
-                    TextAlignment="Left" />
-                <TextBlock
-                    Width="100"
-                    Margin="5"
-                    VerticalAlignment="Center"
-                    FontWeight="SemiBold"
-                    PointerPressed="SortBy_Click"
-                    Text="Time"
-                    TextAlignment="Left" />
-                <TextBlock
-                    Width="150"
-                    Margin="5"
-                    VerticalAlignment="Center"
-                    FontWeight="SemiBold"
-                    PointerPressed="SortBy_Click"
-                    Text="Artist"
-                    TextAlignment="Left" />
-                <TextBlock
-                    Width="150"
-                    Margin="5"
-                    VerticalAlignment="Center"
-                    FontWeight="SemiBold"
-                    PointerPressed="SortBy_Click"
-                    Text="Album"
-                    TextAlignment="Left" />
-                <TextBlock
-                    Width="50"
-                    Margin="5"
-                    VerticalAlignment="Center"
-                    FontWeight="SemiBold"
-                    PointerPressed="SortBy_Click"
-                    Text="Size"
-                    TextAlignment="Left" />
+                <StackPanel Width="350" Orientation="Horizontal">
+                    <TextBlock
+                        Margin="5"
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        PointerPressed="SortBy_Click"
+                        Text="Name"
+                        TextAlignment="Left" />
+                    <TextBlock
+                        x:Name="NameSortIcon"
+                        Width="20"
+                        Margin="5,0,0,0"
+                        VerticalAlignment="Center"
+                        FontFamily="Segoe MDL2 Assets"
+                        Text=""
+                        TextAlignment="Left" />
+                </StackPanel>
+                <StackPanel Width="100" Orientation="Horizontal">
+                    <TextBlock
+                        Margin="5"
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        PointerPressed="SortBy_Click"
+                        Text="Time"
+                        TextAlignment="Left" />
+                    <TextBlock
+                        x:Name="TimeSortIcon"
+                        Width="20"
+                        Margin="5,0,0,0"
+                        VerticalAlignment="Center"
+                        FontFamily="Segoe MDL2 Assets"
+                        Text=""
+                        TextAlignment="Left" />
+                </StackPanel>
+                <StackPanel Width="150" Orientation="Horizontal">
+                    <TextBlock
+                        Margin="5"
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        PointerPressed="SortBy_Click"
+                        Text="Artist"
+                        TextAlignment="Left" />
+                    <TextBlock
+                        x:Name="ArtistSortIcon"
+                        Width="20"
+                        Margin="5,0,0,0"
+                        VerticalAlignment="Center"
+                        FontFamily="Segoe MDL2 Assets"
+                        Text=""
+                        TextAlignment="Left" />
+                </StackPanel>
+                <StackPanel Width="150" Orientation="Horizontal">
+                    <TextBlock
+                        Margin="5"
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        PointerPressed="SortBy_Click"
+                        Text="Album"
+                        TextAlignment="Left" />
+                    <TextBlock
+                        x:Name="AlbumSortIcon"
+                        Width="20"
+                        Margin="5,0,0,0"
+                        VerticalAlignment="Center"
+                        FontFamily="Segoe MDL2 Assets"
+                        Text=""
+                        TextAlignment="Left" />
+                </StackPanel>
+                <StackPanel Width="50" Orientation="Horizontal">
+                    <TextBlock
+                        Margin="5"
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        PointerPressed="SortBy_Click"
+                        Text="Size"
+                        TextAlignment="Left" />
+                    <TextBlock
+                        x:Name="SizeSortIcon"
+                        Width="20"
+                        Margin="5,0,0,0"
+                        VerticalAlignment="Center"
+                        FontFamily="Segoe MDL2 Assets"
+                        Text=""
+                        TextAlignment="Left" />
+                </StackPanel>
             </StackPanel>
+
         </Border>
 
 

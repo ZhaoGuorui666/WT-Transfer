@@ -1,8 +1,8 @@
-ï»¿<!--  Copyright (c) Microsoft Corporation and Contributors.  -->
+<!--  Copyright (c) Microsoft Corporation and Contributors.  -->
 <!--  Licensed under the MIT License.  -->
 
 <Page
-    x:Class="WT_Transfer.Pages.PhotoPage"
+    x:Class="WT_Transfer.Pages.VideoPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:Model="using:WT_Transfer.Models"
@@ -18,7 +18,7 @@
     <Page.Resources>
 
         <helpers:DateTimeFormatConverter x:Key="DateTimeFormatConverter"/>
-        
+
         <helpers:CountToStringConverter x:Key="ItemCountConverter" />
 
         <MenuFlyout x:Key="SortFlyout">
@@ -88,7 +88,7 @@
                 Click="FilterByThisYear_Click"
                 Text="This Year" />
 
-            <!--  æ·»åŠ åˆ†éš”çº¿  -->
+            <!--  Ìí¼Ó·Ö¸ôÏß  -->
             <MenuFlyoutSeparator />
 
             <ToggleMenuFlyoutItem
@@ -125,13 +125,13 @@
                 <TextBlock
                     HorizontalAlignment="Center"
                     Foreground="Gray"
-                    Text="{Binding PhotoCount, Converter={StaticResource ItemCountConverter}}" />
+                    Text="{Binding VideoCount, Converter={StaticResource ItemCountConverter}}" />
             </StackPanel>
         </DataTemplate>
 
         <CollectionViewSource x:Name="cvs" IsSourceGrouped="True" />
 
-        <DataTemplate x:Key="ImageTemplate" x:DataType="Model:PhotoInfo">
+        <DataTemplate x:Key="ImageTemplate" x:DataType="Model:VideoInfo">
             <StackPanel Width="154" Height="184">
                 <Border
                     Width="150"
@@ -173,10 +173,10 @@
                                 Margin="0,0,5,0"
                                 FontSize="16"
                                 Text="  -" />
-                            <TextBlock FontSize="16" Text="{Binding PhotoCount}" />
+                            <TextBlock FontSize="16" Text="{Binding VideoCount}" />
                             <TextBlock FontSize="16" Text=" Items, " />
                             <TextBlock
-                                x:Name="SelectedPhotoCountTextBlock"
+                                x:Name="SelectedVideoCountTextBlock"
                                 FontSize="16"
                                 Text="{Binding SelectedCount}" />
                             <TextBlock FontSize="16" Text=" Selected " />
@@ -214,7 +214,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!--  æ ‡é¢˜æ   -->
+        <!--  ±êÌâÀ¸  -->
         <StackPanel
             Grid.Row="0"
             Margin="37,20,20,0"
@@ -225,7 +225,7 @@
                     x:Name="PageHeader"
                     Height="50"
                     Style="{StaticResource TitleTextBlockStyle}"
-                    Text="Photos" />
+                    Text="Videos" />
 
                 <Button
                     x:Name="HelpBtn"
@@ -249,7 +249,7 @@
 
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
-                        <!--  å ç”¨æ‰€æœ‰å‰©ä½™ç©ºé—´  -->
+                        <!--  Õ¼ÓÃËùÓÐÊ£Óà¿Õ¼ä  -->
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
@@ -260,19 +260,19 @@
                             </AppBarButton.Content>
                             <AppBarButton.Flyout>
                                 <MenuFlyout>
-                                    <MenuFlyoutItem Click="ExportAllPhotos_Click" Text="Export All Photos" />
-                                    <MenuFlyoutItem Click="ExportSelectedPhotos_Click" Text="Export Selected Photos" />
+                                    <MenuFlyoutItem Click="ExportAllVideos_Click" Text="Export All Videos" />
+                                    <MenuFlyoutItem Click="ExportSelectedVideos_Click" Text="Export Selected Videos" />
                                 </MenuFlyout>
                             </AppBarButton.Flyout>
                         </AppBarButton>
 
-                        <AppBarButton x:Name="SavePhoto" Label="Import to Android">
+                        <AppBarButton x:Name="SaveVideo" Label="Import to Android">
                             <AppBarButton.Content>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE898;" />
                             </AppBarButton.Content>
                             <AppBarButton.Flyout>
                                 <MenuFlyout>
-                                    <MenuFlyoutItem Click="ImportPhotos_Click" Text="Select Files" />
+                                    <MenuFlyoutItem Click="ImportVideos_Click" Text="Select Files" />
                                     <MenuFlyoutItem Click="ImportFolder_Click" Text="Select Folder" />
                                 </MenuFlyout>
                             </AppBarButton.Flyout>
@@ -282,8 +282,8 @@
 
                         <!--
                     <AppBarButton
-                        x:Name="SetPhotoToWall"
-                        Click="SetPhotoToWall_Clicks"
+                        x:Name="SetVideoToWall"
+                        Click="SetVideoToWall_Clicks"
                         Label="Set As Wallpaper">
                         <AppBarButton.Content>
                             <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8BA;" />
@@ -293,8 +293,8 @@
 
 
                         <AppBarButton
-                            x:Name="DelPhoto"
-                            Click="DeleteSelectedPhotosButton_Click"
+                            x:Name="DelVideo"
+                            Click="DeleteSelectedVideosButton_Click"
                             Label="Delete">
                             <AppBarButton.Content>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE74D;" />
@@ -349,7 +349,7 @@
                             Text="/Pictures/" />
                     </StackPanel>
 
-                    <!--  æŒ‰ç…§æ—¶é—´æŽ’åº  -->
+                    <!--  °´ÕÕÊ±¼äÅÅÐò  -->
                     <StackPanel
                         Grid.Column="1"
                         Margin="10,0,10,0"
@@ -375,7 +375,7 @@
                             Tapped="Image_Tapped" />
                     </StackPanel>
 
-                    <!--  æŒ‰ç…§æ—¶é—´èŒƒå›´  -->
+                    <!--  °´ÕÕÊ±¼ä·¶Î§  -->
                     <StackPanel
                         Grid.Column="2"
                         HorizontalAlignment="Right"
@@ -431,7 +431,7 @@
 
         </StackPanel>
 
-        <!--  åŠ è½½è¿›åº¦æ¡  -->
+        <!--  ¼ÓÔØ½ø¶ÈÌõ  -->
         <StackPanel
             x:Name="progressRing"
             Grid.Row="1"
@@ -445,7 +445,7 @@
             <TextBlock Margin="14,12,0,0" Text="Loading..." />
         </StackPanel>
 
-        <!--  è¯»å–ä¸åˆ°pathçš„æ˜¾ç¤ºä¿¡æ¯  -->
+        <!--  ¶ÁÈ¡²»µ½pathµÄÏÔÊ¾ÐÅÏ¢  -->
         <TextBlock
             x:Name="NoDataText"
             Grid.Row="1"
@@ -459,7 +459,7 @@
         </TextBlock>
 
         
-        <!-- ä¸»è¦å†…å®¹ -->
+        <!-- Ö÷ÒªÄÚÈÝ-->
         <ScrollViewer Grid.Row="1" Margin="37,0,20,0">
             <StackPanel Orientation="Vertical">
 
@@ -477,13 +477,13 @@
                 </GridView>
 
                 <GridView
-                    x:Name="PhotoGrid"
+                    x:Name="VideoGrid"
                     IsItemClickEnabled="True"
-                    ItemClick="PhotoGrid_ItemClick"
+                    ItemClick="VideoGrid_ItemClick"
                     ItemTemplate="{StaticResource ImageTemplate}"
+                    DoubleTapped="VideoGrid_DoubleTapped"
                     ItemsSource="{Binding Source={StaticResource cvs}}"
                     SelectionMode="Multiple"
-                    DoubleTapped="PhotoGrid_DoubleTapped"
                     Visibility="Collapsed">
                     <GridView.GroupStyle>
                         <GroupStyle HeaderTemplate="{StaticResource GroupHeaderTemplate}" />
@@ -492,7 +492,7 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!--  æƒé™å¼¹çª—  -->
+        <!--  È¨ÏÞµ¯´°  -->
         <ContentDialog
             x:Name="permission"
             Title="No permission"
@@ -503,22 +503,22 @@
             </TextBlock>
         </ContentDialog>
 
-        <!--  åŒæ­¥å›¾ç‰‡å¼¹çª—  -->
+        <!--  Í¬²½Í¼Æ¬µ¯´°  -->
         <ContentDialog
-            x:Name="SyncPhoto"
+            x:Name="SyncVideo"
             Title="Sync Info"
             Background="#F0F3F9"
             PrimaryButtonText="OK">
             <TextBlock x:Name="SyncMessage" />
         </ContentDialog>
 
-        <!--  åŒå‡»å›¾ç‰‡å¼¹çª—  -->
-        <ContentDialog
-            x:Name="ShowPhoto"
-            Title="Photo"
-            Background="#F0F3F9"
-            PrimaryButtonText="OK">
-            <Image x:Name="photoImage" />
-        </ContentDialog>
+        <!--  Ë«»÷ÊÓÆµµ¯´°  -->
+        <MediaPlayerElement x:Name="videoPlayerElement"
+                    AutoPlay="False"
+                    AreTransportControlsEnabled="True"
+                    Visibility="Collapsed"
+                    Width="800"
+                    Height="450" />
+
     </Grid>
 </Page>

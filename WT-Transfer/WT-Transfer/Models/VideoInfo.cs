@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace WT_Transfer.Models
 {
-    public class PhotoInfo : INotifyPropertyChanged
+    public class VideoInfo : INotifyPropertyChanged
     {
         public string Bucket { get; set; }
         public string Date { get; set; }
@@ -70,7 +70,7 @@ namespace WT_Transfer.Models
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        public PhotoInfo()
+        public VideoInfo()
         {
         }
 

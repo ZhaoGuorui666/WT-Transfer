@@ -30,6 +30,7 @@
     <None Remove="Pages\SettingPage.xaml" />
     <None Remove="Pages\Sms.xaml" />
     <None Remove="Pages\TestPage.xaml" />
+    <None Remove="Pages\VideoPage.xaml" />
     <None Remove="USBDebuggWindow.xaml" />
   </ItemGroup>
 
@@ -57,6 +58,12 @@
     <Content Update="Assets\icons8-android-24.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="Pages\VideoPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
 
   <ItemGroup>

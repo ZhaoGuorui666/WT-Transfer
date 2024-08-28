@@ -50,7 +50,7 @@
                     <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEB9F;" />
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
-            <NavigationViewItem Content="Video" Tag="Photo">
+            <NavigationViewItem Content="Video" Tag="Video">
                 <NavigationViewItem.Icon>
                     <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE714;" />
                 </NavigationViewItem.Icon>

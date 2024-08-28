@@ -40,13 +40,15 @@ using static WT_Transfer.SocketModels.Request;
 using System.Threading;
 using Microsoft.UI.Xaml.Shapes;
 using System.Diagnostics;
+using Windows.Media.Core;
+using Windows.Media.Playback;
 
 namespace WT_Transfer.Pages
 {
     /// <summary>
     /// 一个空白页面，可以单独使用或在 Frame 内导航到此页面。
     /// </summary>
-    public sealed partial class PhotoPage : Page
+    public sealed partial class VideoPage : Page
     {
         // 辅助类用于各种功能
         SocketHelper socketHelper = new SocketHelper();
@@ -58,28 +60,28 @@ namespace WT_Transfer.Pages
         CheckUsbHelper checkUsbHelper = new CheckUsbHelper();
 
         // 用于存储照片信息的数据结构
-        public List<PhotoInfo> Photos = new List<PhotoInfo>();
-        public List<PhotoInfo> PhotosSorted = new List<PhotoInfo>();
-        public Dictionary<string, List<PhotoInfo>> PhotosInBucket { get; set; }
+        public List<VideoInfo> Videos = new List<VideoInfo>();
+        public List<VideoInfo> VideosSorted = new List<VideoInfo>();
+        public Dictionary<string, List<VideoInfo>> VideosInBucket { get; set; }
         HashSet<String> buckets = new HashSet<string>();
         string currentBucket = "";
 
         // 当前操作的模块
         string currentModule = "bucket";
-        List<PhotoInfo> currentPhotos = new List<PhotoInfo>();
+        List<VideoInfo> currentVideos = new List<VideoInfo>();
 
         //Alubm列表数据
         List<AlbumInfo> albumList = new List<AlbumInfo>();
-        ObservableCollection<GroupInfoList> groupedData;
+        ObservableCollection<GroupInfoList_Video> groupedData;
 
         //当前目录
         private string currentDirectory = "/Pictures/";
 
         // 创建一个集合用于存放没有缩略图的照片
-        List<PhotoInfo> photosWithoutThumbnail = new List<PhotoInfo>();
+        List<VideoInfo> photosWithoutThumbnail = new List<VideoInfo>();
 
         // 构造函数
-        public PhotoPage()
+        public VideoPage()
         {
             try
             {
@@ -102,11 +104,11 @@ namespace WT_Transfer.Pages
         {
             try
             {
-                    
-                if (this.Photos == null || this.buckets == null || this.PhotosInBucket == null
-                    || Photos.Count == 0 || buckets.Count == 0 || PhotosInBucket.Count == 0)
+
+                if (this.Videos == null || this.buckets == null || this.VideosInBucket == null
+                    || Videos.Count == 0 || buckets.Count == 0 || VideosInBucket.Count == 0)
                 {
-                    if (MainWindow.Photos == null || MainWindow.buckets == null || MainWindow.PhotosInBucket == null)
+                    if (MainWindow.Videos == null || MainWindow.buckets == null || MainWindow.VideosInBucket == null)
                     {
                         // 进行初始化操作，例如解析数据并赋值给 calls
                         if (!MainWindow.sms_isRuning)
@@ -115,7 +117,7 @@ namespace WT_Transfer.Pages
                         {
                             await Task.Run(() =>
                             {
-                                while (MainWindow.Photos == null)
+                                while (MainWindow.Videos == null)
                                 {
                                     Task.Delay(1000).Wait();
                                 }
@@ -146,13 +148,13 @@ namespace WT_Transfer.Pages
         // 初始化页面的方法
         private void InitPage()
         {
-            Photos = MainWindow.Photos;
+            Videos = MainWindow.Videos;
             buckets = MainWindow.buckets;
-            PhotosInBucket = MainWindow.PhotosInBucket;
-            PhotosSorted = MainWindow.PhotosSorted;
+            VideosInBucket = MainWindow.VideosInBucket;
+            VideosSorted = MainWindow.VideosSorted;
 
             // 设置目录网格的数据源并更新分页信息
-            BucketGrid.ItemsSource = PhotosInBucket;
+            BucketGrid.ItemsSource = VideosInBucket;
 
             // 隐藏进度环并显示目录网格
             progressRing.Visibility = Visibility.Collapsed;
@@ -174,7 +176,7 @@ namespace WT_Transfer.Pages
 
                 await Task.Run(async () =>
                 {
-                    PhotosInBucket = new Dictionary<string, List<PhotoInfo>>();
+                    VideosInBucket = new Dictionary<string, List<VideoInfo>>();
 
                     SocketHelper helper = new SocketHelper();
                     AdbHelper adbHelper = new AdbHelper();
@@ -201,10 +203,9 @@ namespace WT_Transfer.Pages
                             // 解析数据
                             JArray jArray = JArray.Parse(str);
                             // 使用 LINQ 查询获取 DisplayName 和 MobileNum
-                            //{"bucket":"WeiXin","date":"2023-11-09 10:15:51","displayName":"mmexport1699496151800.jpg","path":"/storage/emulated/0/Pictures/WeiXin/mmexport1699496151800.jpg","size":2933299}
                             var resultArray = (from item in jArray
                                                let extension = System.IO.Path.GetExtension(item["path"]?.ToString()).ToLower()
-                                               where extension == ".jpg" || extension == ".jpeg" || extension == ".png" || extension == ".bmp" || extension == ".gif" || extension == ".tiff"
+                                               where extension == ".mp4" || extension == ".avi" || extension == ".mov" || extension == ".mkv" || extension == ".flv" || extension == ".wmv"
                                                select new
                                                {
                                                    Bucket = item["bucket"]?.ToString(),
@@ -230,54 +231,54 @@ namespace WT_Transfer.Pages
                             // 将数据存储到字典中
                             foreach (var item in resultArray)
                             {
-                                PhotoInfo photoInfo = new PhotoInfo();
-                                photoInfo.Bucket = item.Bucket;
-                                photoInfo.Date = item.Date;
-                                photoInfo.Path = item.Path;
-                                photoInfo.DisplayName = item.displayName;
+                                VideoInfo VideoInfo = new VideoInfo();
+                                VideoInfo.Bucket = item.Bucket;
+                                VideoInfo.Date = item.Date;
+                                VideoInfo.Path = item.Path;
+                                VideoInfo.DisplayName = item.displayName;
 
                                 // 将大小从字节转换为MB
                                 if (double.TryParse(item.Size, out double sizeInBytes))
                                 {
                                     double sizeInMB = sizeInBytes / (1024 * 1024);
-                                    photoInfo.Size = sizeInMB.ToString("0.## MB"); // 格式化为保留两位小数
+                                    VideoInfo.Size = sizeInMB.ToString("0.## MB"); // 格式化为保留两位小数
                                 }
                                 else
                                 {
-                                    photoInfo.Size = "Unknown Size"; // 如果无法解析，设置为未知
+                                    VideoInfo.Size = "Unknown Size"; // 如果无法解析，设置为未知
                                 }
 
-                                photoInfo.getTitle();
+                                VideoInfo.getTitle();
 
                                 if (item.Bucket == null)
                                 {
-                                    photoInfo.Bucket = "null";
+                                    VideoInfo.Bucket = "null";
                                 }
-                                Photos.Add(photoInfo);
+                                Videos.Add(VideoInfo);
 
-                                List<PhotoInfo> photos = new List<PhotoInfo>();
-                                if (PhotosInBucket.TryGetValue(photoInfo.Bucket, out photos))
+                                List<VideoInfo> videos = new List<VideoInfo>();
+                                if (VideosInBucket.TryGetValue(VideoInfo.Bucket, out videos))
                                 {
                                     // 如果字典中已有该键，直接添加照片信息
-                                    photos.Add(photoInfo);
+                                    videos.Add(VideoInfo);
                                 }
                                 else
                                 {
-                                    PhotosInBucket.Add(photoInfo.Bucket, new List<PhotoInfo> {
-                        photoInfo
+                                    VideosInBucket.Add(VideoInfo.Bucket, new List<VideoInfo> {
+                        VideoInfo
                     });
                                 }
                             }
 
                             // 使用 LINQ 查询排序照片信息
-                            PhotosSorted = new List<PhotoInfo>(Photos);
-                            PhotosSorted = PhotosSorted.OrderByDescending(p => p.Date).ToList();
+                            VideosSorted = new List<VideoInfo>(Videos);
+                            VideosSorted = VideosSorted.OrderByDescending(p => p.Date).ToList();
 
                             // 缓存数据
                             MainWindow.buckets = buckets;
-                            MainWindow.Photos = Photos;
-                            MainWindow.PhotosSorted = PhotosSorted;
-                            MainWindow.PhotosInBucket = PhotosInBucket;
+                            MainWindow.Videos = Videos;
+                            MainWindow.VideosSorted = VideosSorted;
+                            MainWindow.VideosInBucket = VideosInBucket;
 
                             //异步线程将缩率图传输到电脑端
                             await Task.Run(() =>
@@ -286,7 +287,7 @@ namespace WT_Transfer.Pages
                         "/storage/emulated/0/Android/data/com.example.contacts/files/Download/pic";
 
                                 string localPath =
-                                    System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./images"));
+                                    System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./videos"));
 
                                 // 判断目录是否存在
                                 if (!System.IO.Directory.Exists(localPath))
@@ -296,6 +297,13 @@ namespace WT_Transfer.Pages
                                 }
 
                                 string picPath = System.IO.Path.Combine(localPath, "./pic");
+
+                                // 判断目录是否存在
+                                if (!System.IO.Directory.Exists(picPath))
+                                {
+                                    // 如果目录不存在，则创建目录
+                                    System.IO.Directory.CreateDirectory(picPath);
+                                }
 
                                 // 获取本地路径下所有文件的数量
                                 int fileCount = System.IO.Directory.GetFiles(picPath, "*.jpg").Length;
@@ -312,29 +320,24 @@ namespace WT_Transfer.Pages
                                 }
                             });
 
-                            photosWithoutThumbnail = new List<PhotoInfo>();
-                            // 设置缩略图展示路径
-                            foreach (var photo in Photos)
-                            {
-                                string localPath =
-                                    System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./images/pic/" + photo.DisplayName + ".jpg")); ;
 
-                                // 判断目录是否存在
-                                if (!System.IO.Directory.Exists(localPath))
-                                {
-                                    // 如果目录不存在，则创建目录
-                                    System.IO.Directory.CreateDirectory(localPath);
-                                }
+                            photosWithoutThumbnail = new List<VideoInfo>();
+                            // 设置缩略图展示路径
+                            foreach (var video in Videos)
+                            {
+                                // 设置缩略图路径
+                                string localPath =
+                                    System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./videos/pic/" + video.DisplayName + ".jpg")); ;
 
                                 // 确保在 UI 线程中设置 LocalPath
                                 DispatcherQueue.TryEnqueue(() =>
                                 {
-                                    photo.LocalPath = localPath;
+                                    video.LocalPath = localPath;
 
-                                    // 判断文件是否存在，如果不存在则将 photo 加入集合
+                                    // 判断文件是否存在，如果不存在则将 video 加入集合
                                     if (!System.IO.File.Exists(localPath))
                                     {
-                                        photosWithoutThumbnail.Add(photo);
+                                        photosWithoutThumbnail.Add(video);
                                     }
                                 });
 
@@ -344,9 +347,8 @@ namespace WT_Transfer.Pages
                             await generateThumbil(helper, adbHelper);
 
 
-                            // 初始化目录 AlbumList
-                            AddAlbumList();
 
+                            AddAlbumList();
                             // 更新界面
                             DispatcherQueue.TryEnqueue(() =>
                             {
@@ -378,7 +380,7 @@ namespace WT_Transfer.Pages
                     else
                     {
                         // 查询失败
-                        show_error("Photo query failed ,please check the phone connection.");
+                        show_error("Video query failed ,please check the phone connection.");
                     }
                 });
 
@@ -393,11 +395,11 @@ namespace WT_Transfer.Pages
             async Task generateThumbil(SocketHelper helper, AdbHelper adbHelper)
             {
                 // 创建一个集合的副本以避免在遍历时修改原集合
-                var photosToProcess = new List<PhotoInfo>(photosWithoutThumbnail);
+                var photosToProcess = new List<VideoInfo>(photosWithoutThumbnail);
 
-                foreach (PhotoInfo photo in photosToProcess)
+                foreach (VideoInfo video in photosToProcess)
                 {
-                    if(String.IsNullOrEmpty(photo.Path))
+                    if (String.IsNullOrEmpty(video.Path))
                     {
                         continue;
                     }
@@ -407,7 +409,7 @@ namespace WT_Transfer.Pages
                     request.operation = "generate";
                     request.info = new Data
                     {
-                        path = photo.Path,
+                        path = video.Path,
                     };
 
                     string requestStr = JsonConvert.SerializeObject(request);
@@ -421,13 +423,20 @@ namespace WT_Transfer.Pages
                     if (result2.status.Equals("00"))
                     {
                         string localPath =
-                                System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./images/pic/" + photo.DisplayName + ".jpg")); ;
+                                System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./images/pic/" + video.DisplayName + ".jpg")); ;
+
+                        // 判断目录是否存在
+                        if (!System.IO.Directory.Exists(localPath))
+                        {
+                            // 如果目录不存在，则创建目录
+                            System.IO.Directory.CreateDirectory(localPath);
+                        }
 
                         string phonePath =
-    "/storage/emulated/0/Android/data/com.example.contacts/files/Download/pic/" + photo.DisplayName + ".jpg";
+    "/storage/emulated/0/Android/data/com.example.contacts/files/Download/pic/" + video.DisplayName + ".jpg";
                         adbHelper.saveFromPath(phonePath, localPath);
 
-                        logger.Info("将一个缩率图加入到文件夹中：" + photo.DisplayName);
+                        logger.Info("将一个缩率图加入到文件夹中：" + video.DisplayName);
                     }
                 }
             }
@@ -437,18 +446,18 @@ namespace WT_Transfer.Pages
         private List<AlbumInfo> AddAlbumList()
         {
             albumList = new List<AlbumInfo>();
-            foreach (var kv in PhotosInBucket)
+            foreach (var kv in VideosInBucket)
             {
-                List<PhotoInfo> photos = new List<PhotoInfo>();
-                photos.Add(kv.Value.First());
-                setPhotoImgPath(photos);
+                List<VideoInfo> Videos = new List<VideoInfo>();
+                Videos.Add(kv.Value.First());
+                setVideoImgPath(Videos);
                 if (kv.Value.Count > 0)
                 {
-                    var firstPhotoPath = kv.Value.First().LocalPath;
+                    var firstVideoPath = kv.Value.First().LocalPath;
                     albumList.Add(new AlbumInfo
                     {
                         Name = kv.Key,
-                        FirstPhotoPath = firstPhotoPath,
+                        FirstPhotoPath = firstVideoPath,
                         PhotoCount = kv.Value.Count
                     });
                 }
@@ -469,11 +478,11 @@ namespace WT_Transfer.Pages
         // 更新选择状态信息
         private void UpdateSelectedFilesInfo()
         {
-            int selectedCount = Photos.Count(photo => photo.IsSelected);
-            double selectedSizeMB = Photos.Where(photo => photo.IsSelected).Sum(photo => ParseSizeInMB(photo.Size));
+            int selectedCount = Videos.Count(Video => Video.IsSelected);
+            double selectedSizeMB = Videos.Where(Video => Video.IsSelected).Sum(Video => ParseSizeInMB(Video.Size));
 
-            double totalSizeMB = Photos.Sum(photo => ParseSizeInMB(photo.Size));
-            string info = $"{selectedCount} of {Photos.Count} Item(s) Selected - {selectedSizeMB:0.##} MB of {totalSizeMB:0.##} MB";
+            double totalSizeMB = Videos.Sum(Video => ParseSizeInMB(Video.Size));
+            string info = $"{selectedCount} of {Videos.Count} Item(s) Selected - {selectedSizeMB:0.##} MB of {totalSizeMB:0.##} MB";
             SelectedFilesInfo.Text = info;
         }
 
@@ -500,8 +509,8 @@ namespace WT_Transfer.Pages
                     {
                         // 获取目录名称
                         string bucket = textBlock.Text;
-                        List<PhotoInfo> photos = new List<PhotoInfo>();
-                        if (PhotosInBucket.TryGetValue(bucket, out photos))
+                        List<VideoInfo> Videos = new List<VideoInfo>();
+                        if (VideosInBucket.TryGetValue(bucket, out Videos))
                         {
                             // 更新当前目录
                             currentBucket = bucket;
@@ -509,25 +518,25 @@ namespace WT_Transfer.Pages
                             CurrentDirectoryTextBox.Text = currentDirectory;
 
                             //按照日期分组
-                            groupedData = new ObservableCollection<GroupInfoList>();
+                            groupedData = new ObservableCollection<GroupInfoList_Video>();
 
-                            var groupedPhotos = photos
+                            var groupedVideos = Videos
                                 .GroupBy(p => DateTime.Parse(p.Date).ToString("yyyy-MM-dd"))
                                 .OrderByDescending(g => g.Key);
 
-                            foreach (var group in groupedPhotos)
+                            foreach (var group in groupedVideos)
                             {
-                                var groupInfoList = new GroupInfoList { Key = group.Key };
+                                var groupInfoList = new GroupInfoList_Video { Key = group.Key };
                                 groupInfoList.AddRange(group);
                                 groupedData.Add(groupInfoList);
                             }
 
 
                             // 按时间排序
-                            //PhotosInBucket[bucket] = photos;
+                            //VideosInBucket[bucket] = Videos;
 
                             // 更新当前模块和分页信息
-                            currentModule = "photo";
+                            currentModule = "video";
 
                             DispatcherQueue.TryEnqueue(() =>
                             {
@@ -541,35 +550,50 @@ namespace WT_Transfer.Pages
                             DispatcherQueue.TryEnqueue(() =>
                             {
                                 // 切换到照片网格视图
-                                PhotoGrid.Visibility = Visibility.Visible;
+                                VideoGrid.Visibility = Visibility.Visible;
                                 // 隐藏加载进度条
                                 progressRing.Visibility = Visibility.Collapsed;
                             });
 
                             // 设置数据源
-                            //currentPhotos = photos.ToList();
+                            //currentVideos = Videos.ToList();
 
                             //如果选中之后退出，再次进入之后，把之前选中的图片给设置选中状态
                             DispatcherQueue.TryEnqueue(() =>
                             {
                                 foreach (var group in groupedData)
                                 {
-                                    foreach (PhotoInfo p in group)
+                                    foreach (VideoInfo p in group)
                                     {
                                         if (p.IsSelected == true)
                                         {
-                                            PhotoGrid.SelectedItems.Add(p);
+                                            VideoGrid.SelectedItems.Add(p);
                                         }
                                     }
                                 }
+
+                                // 设置缩略图展示路径
+                                foreach (var videos in groupedData)
+                                {
+                                    foreach (var video in videos)
+                                    {
+                                        // 设置缩略图路径
+                                        string localPath =
+                                            System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./videos/pic/" + video.DisplayName + ".jpg")); ;
+
+                                        video.LocalPath = localPath;
+                                    }
+                                }
+
+                                var cvs = new CollectionViewSource
+                                {
+                                    IsSourceGrouped = true,
+                                    Source = groupedData
+                                };
+                                VideoGrid.ItemsSource = cvs.View;
                             });
 
-                            var cvs = new CollectionViewSource
-                            {
-                                IsSourceGrouped = true,
-                                Source = groupedData
-                            };
-                            PhotoGrid.ItemsSource = cvs.View;
+
                         }
                         else
                         {
@@ -586,16 +610,16 @@ namespace WT_Transfer.Pages
             }
         }
 
-        private ObservableCollection<GroupInfoList> GenerateGroupedData()
+        private ObservableCollection<GroupInfoList_Video> GenerateGroupedData()
         {
             string imageDirectory = @"D:\BaiduNetdiskDownload\val2017";
             string thumbnailDirectory = System.IO.Path.Combine(imageDirectory, "thumbnails");
 
-            var groupedData = new ObservableCollection<GroupInfoList>();
+            var groupedData = new ObservableCollection<GroupInfoList_Video>();
 
             for (int i = 0; i < 1000; i += 50)
             {
-                var group = new GroupInfoList() { Key = $"Group {i / 50 + 1}" };
+                var group = new GroupInfoList_Video() { Key = $"Group {i / 50 + 1}" };
 
                 for (int j = 1; j <= 50; j++)
                 {
@@ -603,7 +627,7 @@ namespace WT_Transfer.Pages
                     string imagePath = System.IO.Path.Combine(imageDirectory, imageName);
                     string thumbnailPath = System.IO.Path.Combine(thumbnailDirectory, imageName);
 
-                    PhotoInfo image = new PhotoInfo
+                    VideoInfo image = new VideoInfo
                     {
                         Title = imagePath,
                         LocalPath = thumbnailPath
@@ -620,13 +644,13 @@ namespace WT_Transfer.Pages
 
 
         // 设置照片的缩略图路径
-        public async Task setPhotoImgPath(List<PhotoInfo> photos)
+        public async Task setVideoImgPath(List<VideoInfo> Videos)
         {
             try
             {
-                foreach (var photo in photos)
+                foreach (var Video in Videos)
                 {
-                    int index = Photos.FindIndex(p => p.Title == photo.Title);
+                    int index = Videos.FindIndex(p => p.Title == Video.Title);
                     // 设置缩略图路径
                     string phonePath =
                         "/storage/emulated/0/Android/data/com.example.contacts/files/Download/pic/" + index + ".jpg";
@@ -637,11 +661,11 @@ namespace WT_Transfer.Pages
                     await Task.Run(() => adbHelper.saveFromPath(phonePath, localPath));
                     if (File.Exists(localPath))
                     {
-                        photo.LocalPath = localPath;
+                        Video.LocalPath = localPath;
                     }
                     else
                     {
-                        photo.LocalPath = "/Images/noImg.png";
+                        Video.LocalPath = "/Images/noImg.png";
                     }
                 }
             }
@@ -673,7 +697,7 @@ namespace WT_Transfer.Pages
                 }
 
                 string selectedItem = BucketGrid.SelectedItem.ToString();
-                List<PhotoInfo> photoInfos = PhotosInBucket[selectedItem];
+                List<VideoInfo> VideoInfos = VideosInBucket[selectedItem];
 
                 ContentDialog appInfoDialog = new ContentDialog
                 {
@@ -689,22 +713,22 @@ namespace WT_Transfer.Pages
                 {
                     appInfoDialog.Hide();
 
-                    SyncPhoto.XamlRoot = this.XamlRoot;
-                    SyncPhoto.ShowAsync();
+                    SyncVideo.XamlRoot = this.XamlRoot;
+                    SyncVideo.ShowAsync();
 
                     await Task.Run(async () =>
                     {
-                        foreach (var photo in photoInfos)
+                        foreach (var Video in VideoInfos)
                         {
-                            string path = photo.Path;
-                            string localPath = (string)ApplicationData.Current.LocalSettings.Values[MainWindow.Setting_PhotoBackupPath];
-                            string winPath = localPath + "\\" + selectedItem + "\\" + photo.Title;
+                            string path = Video.Path;
+                            string localPath = (string)ApplicationData.Current.LocalSettings.Values[MainWindow.Setting_VideoBackupPath];
+                            string winPath = localPath + "\\" + selectedItem + "\\" + Video.Title;
 
                             adbHelper.saveFromPath(path, winPath);
                             DispatcherQueue.TryEnqueue(() =>
                             {
-                                //infoBar.Message = "Currently backing up: " + photo.Title;
-                                SyncMessage.Text = "Currently backing up: " + photo.Title;
+                                //infoBar.Message = "Currently backing up: " + Video.Title;
+                                SyncMessage.Text = "Currently backing up: " + Video.Title;
                             });
                         }
                     });
@@ -725,9 +749,9 @@ namespace WT_Transfer.Pages
         {
             try
             {
-                PhotoInfo selectedItem = new PhotoInfo();
-                if (currentModule.Equals("photo"))
-                    selectedItem = (PhotoInfo)PhotoGrid.SelectedItem;
+                VideoInfo selectedItem = new VideoInfo();
+                if (currentModule.Equals("video"))
+                    selectedItem = (VideoInfo)VideoGrid.SelectedItem;
                 else
                     selectedItem = null;
 
@@ -777,7 +801,7 @@ namespace WT_Transfer.Pages
             }
         }
 
-        private async void ImportPhotos_Click(object sender, RoutedEventArgs e)
+        private async void ImportVideos_Click(object sender, RoutedEventArgs e)
         {
             var picker = new FileOpenPicker();
             var hWnd = MainWindow.WindowHandle;
@@ -889,32 +913,32 @@ namespace WT_Transfer.Pages
             importDialog.XamlRoot = this.Content.XamlRoot;
             await importDialog.ShowAsync();
 
-            RefreshButton_Click(null,null);
+            RefreshButton_Click(null, null);
         }
 
         private async void UpdateTransferGroup(IEnumerable<StorageFile> files)
         {
             // 查找或创建 transfer 组
-            if (!PhotosInBucket.TryGetValue("transfer", out var transferPhotos))
+            if (!VideosInBucket.TryGetValue("transfer", out var transferVideos))
             {
-                transferPhotos = new List<PhotoInfo>();
-                PhotosInBucket["transfer"] = transferPhotos;
+                transferVideos = new List<VideoInfo>();
+                VideosInBucket["transfer"] = transferVideos;
             }
 
 
             List<String> paths = new List<string>();
             foreach (var file in files)
             {
-                var photoInfo = new PhotoInfo
+                var VideoInfo = new VideoInfo
                 {
                     Title = System.IO.Path.GetFileName(file.Name),
                     Path = $"/sdcard/Pictures/transfer/{file.Name}",
                     LocalPath = file.Path,
                     Date = File.GetCreationTime(file.Path).ToString("yyyy-MM-dd")
                 };
-                transferPhotos.Add(photoInfo);
-                Photos.Add(photoInfo);
-                paths.Add(photoInfo.Path);
+                transferVideos.Add(VideoInfo);
+                Videos.Add(VideoInfo);
+                paths.Add(VideoInfo.Path);
             }
 
             // 提醒手机 新增音乐，扫描
@@ -937,13 +961,13 @@ namespace WT_Transfer.Pages
         }
 
         // 设置图片为壁纸
-        private async void SetPhotoToWall_Clicks(object sender, RoutedEventArgs e)
+        private async void SetVideoToWall_Clicks(object sender, RoutedEventArgs e)
         {
             try
             {
-                PhotoInfo selectedItem = new PhotoInfo();
-                if (currentModule.Equals("photo"))
-                    selectedItem = (PhotoInfo)PhotoGrid.SelectedItem;
+                VideoInfo selectedItem = new VideoInfo();
+                if (currentModule.Equals("video"))
+                    selectedItem = (VideoInfo)VideoGrid.SelectedItem;
                 else
                     selectedItem = null;
 
@@ -960,11 +984,11 @@ namespace WT_Transfer.Pages
                     return;
                 }
 
-                string photoPath = selectedItem.Path;
+                string VideoPath = selectedItem.Path;
                 string localPath =
                         System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path,
                         "./images/" + "wallpaper.jpg")); ;
-                adbHelper.saveFromPath(photoPath, localPath);
+                adbHelper.saveFromPath(VideoPath, localPath);
                 WallpaperChanger.SetWallpaper(localPath);
 
                 ContentDialog aa = new ContentDialog
@@ -989,13 +1013,13 @@ namespace WT_Transfer.Pages
         {
             try
             {
-                PhotoInfo selectedItem = new PhotoInfo();
-                if (currentModule.Equals("photo"))
-                    selectedItem = (PhotoInfo)PhotoGrid.SelectedItem;
+                VideoInfo selectedItem = new VideoInfo();
+                if (currentModule.Equals("video"))
+                    selectedItem = (VideoInfo)VideoGrid.SelectedItem;
                 else
                     selectedItem = null;
 
-                if ((selectedItem == null && currentModule.Equals("photo"))
+                if ((selectedItem == null && currentModule.Equals("video"))
                     || (BucketGrid.SelectedItem == null && currentModule.Equals("bucket")))
                 {
                     ContentDialog a = new ContentDialog
@@ -1030,12 +1054,12 @@ namespace WT_Transfer.Pages
                     {
                         await Task.Run(async () =>
                         {
-                            List<PhotoInfo> photoInfos = PhotosInBucket[selectedBucket];
+                            List<VideoInfo> VideoInfos = VideosInBucket[selectedBucket];
 
-                            foreach (var photo in photoInfos)
+                            foreach (var Video in VideoInfos)
                             {
                                 // 删除设备中的图片
-                                string path = photo.Path;
+                                string path = Video.Path;
                                 string res = adbHelper.cmdExecuteWithAdbExit("shell rm -r " + path);
                                 Result result = socketHelper.getResult("picture", "delete");
                             }
@@ -1044,8 +1068,8 @@ namespace WT_Transfer.Pages
                             {
                                 // 更新UI，删除目录信息
                                 buckets.Remove(selectedBucket);
-                                PhotosInBucket.Remove(selectedBucket);
-                                MainWindow.PhotosInBucket = PhotosInBucket;
+                                VideosInBucket.Remove(selectedBucket);
+                                MainWindow.VideosInBucket = VideosInBucket;
                                 MainWindow.buckets = buckets;
 
                                 BucketGrid.ItemsSource = buckets.ToList();
@@ -1066,15 +1090,15 @@ namespace WT_Transfer.Pages
                         if (result.status.Equals("00"))
                         {
                             // 删除文件
-                            if (currentModule.Equals("photo"))
+                            if (currentModule.Equals("video"))
                             {
-                                List<PhotoInfo> photoInfos = PhotosInBucket[currentBucket];
-                                photoInfos.Remove(selectedItem);
-                                currentPhotos.Remove(selectedItem);
-                                PhotosInBucket[currentBucket] = photoInfos;
-                                PhotoGrid.ItemsSource = currentPhotos;
+                                List<VideoInfo> VideoInfos = VideosInBucket[currentBucket];
+                                VideoInfos.Remove(selectedItem);
+                                currentVideos.Remove(selectedItem);
+                                VideosInBucket[currentBucket] = VideoInfos;
+                                VideoGrid.ItemsSource = currentVideos;
 
-                                MainWindow.PhotosInBucket = PhotosInBucket;
+                                MainWindow.VideosInBucket = VideosInBucket;
                             }
                         }
                         else if (result.status.Equals("101"))
@@ -1138,18 +1162,18 @@ namespace WT_Transfer.Pages
                         {
                             await Task.Run(() =>
                             {
-                                List<PhotoInfo> photosToDelete = PhotosInBucket[selectedBucket];
+                                List<VideoInfo> VideosToDelete = VideosInBucket[selectedBucket];
 
-                                foreach (var photo in photosToDelete)
+                                foreach (var Video in VideosToDelete)
                                 {
-                                    string path = photo.Path;
+                                    string path = Video.Path;
                                     adbHelper.cmdExecuteWithAdbExit($"shell rm \"{path}\"");
                                 }
 
                                 DispatcherQueue.TryEnqueue(() =>
                                 {
                                     // 更新UI，删除相册信息
-                                    PhotosInBucket.Remove(selectedBucket);
+                                    VideosInBucket.Remove(selectedBucket);
                                     albumList.Remove(albumList.First(a => a.Name == selectedBucket));
                                     BucketGrid.ItemsSource = albumList;
                                 });
@@ -1177,18 +1201,18 @@ namespace WT_Transfer.Pages
                         await errorDialog.ShowAsync();
                     }
                 }
-                else if (currentModule.Equals("photo"))
+                else if (currentModule.Equals("video"))
                 {
                     // 删除选中的图片
-                    if (PhotoGrid.SelectedItem != null)
+                    if (VideoGrid.SelectedItem != null)
                     {
-                        PhotoInfo selectedPhoto = (PhotoInfo)PhotoGrid.SelectedItem;
+                        VideoInfo selectedVideo = (VideoInfo)VideoGrid.SelectedItem;
 
                         // 询问用户确认删除操作
                         ContentDialog deleteDialog = new ContentDialog
                         {
-                            Title = "Delete Photo",
-                            Content = "Are you sure you want to delete the selected photo(s)? This action cannot be undone.",
+                            Title = "Delete Video",
+                            Content = "Are you sure you want to delete the selected video(s)? This action cannot be undone?",
                             PrimaryButtonText = "Delete",
                             SecondaryButtonText = "Cancel"
                         };
@@ -1199,31 +1223,31 @@ namespace WT_Transfer.Pages
                         {
                             await Task.Run(() =>
                             {
-                                string path = selectedPhoto.Path;
+                                string path = selectedVideo.Path;
                                 adbHelper.cmdExecuteWithAdbExit($"shell rm \"{path}\"");
 
                                 DispatcherQueue.TryEnqueue(() =>
                                 {
                                     // 更新UI，删除照片信息
-                                    var group = groupedData.FirstOrDefault(g => g.Contains(selectedPhoto));
+                                    var group = groupedData.FirstOrDefault(g => g.Contains(selectedVideo));
                                     if (group != null)
                                     {
-                                        group.Remove(selectedPhoto);
+                                        group.Remove(selectedVideo);
                                         if (group.Count == 0)
                                         {
                                             groupedData.Remove(group);
                                         }
                                     }
 
-                                    PhotoGrid.ItemsSource = null;
-                                    PhotoGrid.ItemsSource = groupedData;
+                                    VideoGrid.ItemsSource = null;
+                                    VideoGrid.ItemsSource = groupedData;
                                 });
                             });
 
                             ContentDialog successDialog = new ContentDialog
                             {
                                 Title = "Success",
-                                Content = "Photo deleted successfully.",
+                                Content = "The selected videos have been successfully deleted.",
                                 PrimaryButtonText = "OK"
                             };
                             successDialog.XamlRoot = this.Content.XamlRoot;
@@ -1235,7 +1259,7 @@ namespace WT_Transfer.Pages
                         ContentDialog errorDialog = new ContentDialog
                         {
                             Title = "Error",
-                            Content = "Please select a photo to delete.",
+                            Content = "Please select a Video to delete.",
                             PrimaryButtonText = "OK"
                         };
                         errorDialog.XamlRoot = this.Content.XamlRoot;
@@ -1260,7 +1284,7 @@ namespace WT_Transfer.Pages
             {
                 // 切换到目录视图
                 BucketGrid.Visibility = Visibility.Visible;
-                PhotoGrid.Visibility = Visibility.Collapsed;
+                VideoGrid.Visibility = Visibility.Collapsed;
                 currentModule = "bucket";
 
                 // 更新分页信息
@@ -1298,40 +1322,6 @@ namespace WT_Transfer.Pages
             ThisYear.IsChecked = false;
             CustomRange.IsChecked = false;
         }
-
-        // 双击图片的事件处理方法
-        private async void StackPanel_DoubleTapped_1(object sender, DoubleTappedRoutedEventArgs e)
-        {
-            try
-            {
-                StackPanel stackPanel = sender as StackPanel;
-                foreach (var child in stackPanel.Children)
-                {
-                    // 检查子元素是否为 TextBlock 类型
-                    if (child is TextBlock textBlock)
-                    {
-                        // 获取照片路径
-                        string path = textBlock.Tag.ToString();
-                        string localPath = (string)ApplicationData.Current.LocalSettings.Values[MainWindow.Setting_PhotoBackupPath];
-                        string winPath = localPath + "\\image" + "\\" + textBlock.Text;
-
-                        adbHelper.saveFromPath(path, winPath);
-
-                        ShowPhoto.XamlRoot = this.XamlRoot;
-                        BitmapImage imageSource = new BitmapImage(new Uri(winPath));
-                        photoImage.Source = imageSource;
-                        await ShowPhoto.ShowAsync();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                show_error(ex.ToString());
-                logHelper.Info(logger, ex.ToString());
-                throw;
-            }
-        }
-
         // 显示错误信息对话框
         private async void show_error(string msg)
         {
@@ -1351,20 +1341,20 @@ namespace WT_Transfer.Pages
 
         private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
-            if (sender is CheckBox checkBox && checkBox.DataContext is GroupInfoList groupInfo)
+            if (sender is CheckBox checkBox && checkBox.DataContext is GroupInfoList_Video groupInfo)
             {
-                foreach (var photo in groupInfo)
+                foreach (var Video in groupInfo)
                 {
-                    photo.IsSelected = false;
+                    Video.IsSelected = false;
 
-                    // 在 PhotoGrid.SelectedItems 中找到对应的项并取消选中
-                    if (PhotoGrid.SelectedItems.Contains(photo))
+                    // 在 VideoGrid.SelectedItems 中找到对应的项并取消选中
+                    if (VideoGrid.SelectedItems.Contains(Video))
                     {
-                        PhotoGrid.SelectedItems.Remove(photo);
+                        VideoGrid.SelectedItems.Remove(Video);
                     }
                 }
 
-                //PhotoGrid.SelectedItems.Clear();
+                //VideoGrid.SelectedItems.Clear();
             }
 
 
@@ -1374,12 +1364,12 @@ namespace WT_Transfer.Pages
 
         private void CheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            if (sender is CheckBox checkBox && checkBox.DataContext is GroupInfoList groupInfo)
+            if (sender is CheckBox checkBox && checkBox.DataContext is GroupInfoList_Video groupInfo)
             {
-                foreach (var photo in groupInfo)
+                foreach (var Video in groupInfo)
                 {
-                    photo.IsSelected = true;
-                    PhotoGrid.SelectedItems.Add(photo);
+                    Video.IsSelected = true;
+                    VideoGrid.SelectedItems.Add(Video);
                 }
             }
 
@@ -1389,22 +1379,23 @@ namespace WT_Transfer.Pages
         }
 
         //选中某项
-        private void PhotoGrid_ItemClick(object sender, ItemClickEventArgs e)
+        private void VideoGrid_ItemClick(object sender, ItemClickEventArgs e)
         {
-            var clickedItem = e.ClickedItem as PhotoInfo;
+            var clickedItem = e.ClickedItem as VideoInfo;
             if (clickedItem != null)
             {
                 DispatcherQueue.TryEnqueue(() =>
                 {
                     clickedItem.IsSelected = !clickedItem.IsSelected;
-                    if(clickedItem.IsSelected == true)
+                    if (clickedItem.IsSelected == true)
                     {
-                        PhotoGrid.SelectedItems.Add(clickedItem);
+                        VideoGrid.SelectedItems.Add(clickedItem);
                     }
                     else
                     {
-                        if (PhotoGrid.SelectedItems.Contains(clickedItem)){
-                            PhotoGrid.SelectedItems.Remove(clickedItem);
+                        if (VideoGrid.SelectedItems.Contains(clickedItem))
+                        {
+                            VideoGrid.SelectedItems.Remove(clickedItem);
                         }
                     }
                 });
@@ -1461,18 +1452,19 @@ namespace WT_Transfer.Pages
                 var group = groupedData.FirstOrDefault(g => g.Key == groupKey);
                 if (group != null)
                 {
-                    bool allSelected = group.All(photo => photo.IsSelected);
-                    bool anySelected = group.Any(photo => photo.IsSelected);
+                    bool allSelected = group.All(Video => Video.IsSelected);
+                    bool anySelected = group.Any(Video => Video.IsSelected);
 
                     if (!allSelected && anySelected)
                     {
                         // 设置为中间状态
                         checkBox.IsChecked = null;
-                    }else if (allSelected)
+                    }
+                    else if (allSelected)
                     {
                         checkBox.IsChecked = true;
                     }
-                    else if(!allSelected)
+                    else if (!allSelected)
                     {
                         checkBox.IsChecked = false;
                     }
@@ -1483,7 +1475,7 @@ namespace WT_Transfer.Pages
 
         private void CheckBox_IndeterminateHandler(object sender, RoutedEventArgs e)
         {
-            if (sender is CheckBox checkBox && checkBox.DataContext is GroupInfoList groupInfo)
+            if (sender is CheckBox checkBox && checkBox.DataContext is GroupInfoList_Video groupInfo)
             {
                 if (groupInfo.CheckAllSelected())
                 {
@@ -1589,7 +1581,7 @@ namespace WT_Transfer.Pages
             {
                 foreach (var group in groupedData)
                 {
-                    var sortedItems = group.OrderBy(photo=>photo.Size).ToList();
+                    var sortedItems = group.OrderBy(Video => Video.Size).ToList();
 
                     group.Clear();
                     foreach (var item in sortedItems)
@@ -1603,7 +1595,7 @@ namespace WT_Transfer.Pages
                     IsSourceGrouped = true,
                     Source = groupedData
                 };
-                PhotoGrid.ItemsSource = cvs.View;
+                VideoGrid.ItemsSource = cvs.View;
             }
         }
 
@@ -1636,7 +1628,7 @@ namespace WT_Transfer.Pages
                 {
                     foreach (var group in groupedData)
                     {
-                        var sortedItems = group.OrderBy(photo => DateTime.Parse(photo.Date)).ToList();
+                        var sortedItems = group.OrderBy(Video => DateTime.Parse(Video.Date)).ToList();
 
                         group.Clear();
                         foreach (var item in sortedItems)
@@ -1649,7 +1641,7 @@ namespace WT_Transfer.Pages
                 {
                     foreach (var group in groupedData)
                     {
-                        var sortedItems = group.OrderBy(photo => photo.Size).ToList();
+                        var sortedItems = group.OrderBy(Video => Video.Size).ToList();
 
                         group.Clear();
                         foreach (var item in sortedItems)
@@ -1664,7 +1656,7 @@ namespace WT_Transfer.Pages
                     IsSourceGrouped = true,
                     Source = groupedData
                 };
-                PhotoGrid.ItemsSource = cvs.View;
+                VideoGrid.ItemsSource = cvs.View;
             }
         }
 
@@ -1687,8 +1679,8 @@ namespace WT_Transfer.Pages
                 else if (currentSortType == SortType.FileSize)
                 {
                     var sortedGroups = ascending
-                        ? groupedData.OrderBy(group => group.Sum(photo => int.TryParse(photo.Size, out int size) ? size : 0)).ToList()
-                        : groupedData.OrderByDescending(group => group.Sum(photo => int.TryParse(photo.Size, out int size) ? size : 0)).ToList();
+                        ? groupedData.OrderBy(group => group.Sum(Video => int.TryParse(Video.Size, out int size) ? size : 0)).ToList()
+                        : groupedData.OrderByDescending(group => group.Sum(Video => int.TryParse(Video.Size, out int size) ? size : 0)).ToList();
 
                     groupedData.Clear();
                     foreach (var group in sortedGroups)
@@ -1702,28 +1694,28 @@ namespace WT_Transfer.Pages
                     IsSourceGrouped = true,
                     Source = groupedData
                 };
-                PhotoGrid.ItemsSource = cvs.View;
+                VideoGrid.ItemsSource = cvs.View;
             }
         }
 
 
-        private async void UpdatePhotoGrid(string directoryName)
+        private async void UpdateVideoGrid(string directoryName)
         {
-            if (currentModule == "photo" && PhotosInBucket.TryGetValue(directoryName, out var photosInDirectory))
+            if (currentModule == "video" && VideosInBucket.TryGetValue(directoryName, out var VideosInDirectory))
             {
-                await Init(); 
+                await Init();
 
-                var groupedData = new ObservableCollection<GroupInfoList>();
+                var groupedData = new ObservableCollection<GroupInfoList_Video>();
 
-                var groupedPhotos = photosInDirectory
+                var groupedVideos = VideosInDirectory
                     .GroupBy(p => DateTime.Parse(p.Date).ToString("yyyy-MM-dd"))
                     .OrderByDescending(g => g.Key);
 
-                foreach (var group in groupedPhotos)
+                foreach (var group in groupedVideos)
                 {
-                    var groupInfoList = new GroupInfoList { Key = group.Key };
-                    groupInfoList.AddRange(group);
-                    groupedData.Add(groupInfoList);
+                    var GroupInfoList_Video = new GroupInfoList_Video { Key = group.Key };
+                    GroupInfoList_Video.AddRange(group);
+                    groupedData.Add(GroupInfoList_Video);
                 }
 
                 var cvs = new CollectionViewSource
@@ -1732,7 +1724,7 @@ namespace WT_Transfer.Pages
                     Source = groupedData
                 };
 
-                PhotoGrid.ItemsSource = cvs.View;
+                VideoGrid.ItemsSource = cvs.View;
             }
         }
 
@@ -1756,7 +1748,7 @@ namespace WT_Transfer.Pages
             SetSingleSelection((ToggleMenuFlyoutItem)sender);
             StartDatePicker.Date = null; // All Time 通常表示无界限
             EndDatePicker.Date = null;
-            FilterPhotosByDateRange(DateTime.MinValue, DateTime.MaxValue);
+            FilterVideosByDateRange(DateTime.MinValue, DateTime.MaxValue);
         }
 
         // 更新其他方法，以同步日期选择器的值
@@ -1767,7 +1759,7 @@ namespace WT_Transfer.Pages
             var endOfWeek = startOfWeek.AddDays(7).AddSeconds(-1);
             StartDatePicker.Date = startOfWeek;
             EndDatePicker.Date = endOfWeek;
-            FilterPhotosByDateRange(startOfWeek, endOfWeek);
+            FilterVideosByDateRange(startOfWeek, endOfWeek);
         }
 
         private void FilterByThisMonth_Click(object sender, RoutedEventArgs e)
@@ -1777,7 +1769,7 @@ namespace WT_Transfer.Pages
             var endOfMonth = startOfMonth.AddMonths(1).AddSeconds(-1);
             StartDatePicker.Date = startOfMonth;
             EndDatePicker.Date = endOfMonth;
-            FilterPhotosByDateRange(startOfMonth, endOfMonth);
+            FilterVideosByDateRange(startOfMonth, endOfMonth);
         }
 
         private void FilterByLastMonth_Click(object sender, RoutedEventArgs e)
@@ -1787,7 +1779,7 @@ namespace WT_Transfer.Pages
             var endOfLastMonth = startOfLastMonth.AddMonths(1).AddSeconds(-1);
             StartDatePicker.Date = startOfLastMonth;
             EndDatePicker.Date = endOfLastMonth;
-            FilterPhotosByDateRange(startOfLastMonth, endOfLastMonth);
+            FilterVideosByDateRange(startOfLastMonth, endOfLastMonth);
         }
 
         private void FilterByLast3Months_Click(object sender, RoutedEventArgs e)
@@ -1797,7 +1789,7 @@ namespace WT_Transfer.Pages
             var endOfLast3Months = DateTime.Today;
             StartDatePicker.Date = startOfLast3Months;
             EndDatePicker.Date = endOfLast3Months;
-            FilterPhotosByDateRange(startOfLast3Months, endOfLast3Months);
+            FilterVideosByDateRange(startOfLast3Months, endOfLast3Months);
         }
 
         private void FilterByLast6Months_Click(object sender, RoutedEventArgs e)
@@ -1807,7 +1799,7 @@ namespace WT_Transfer.Pages
             var endOfLast6Months = DateTime.Today;
             StartDatePicker.Date = startOfLast6Months;
             EndDatePicker.Date = endOfLast6Months;
-            FilterPhotosByDateRange(startOfLast6Months, endOfLast6Months);
+            FilterVideosByDateRange(startOfLast6Months, endOfLast6Months);
         }
 
         private void FilterByThisYear_Click(object sender, RoutedEventArgs e)
@@ -1817,7 +1809,7 @@ namespace WT_Transfer.Pages
             var endOfYear = startOfYear.AddYears(1).AddSeconds(-1);
             StartDatePicker.Date = startOfYear;
             EndDatePicker.Date = endOfYear;
-            FilterPhotosByDateRange(startOfYear, endOfYear);
+            FilterVideosByDateRange(startOfYear, endOfYear);
         }
 
         private void FilterByCustomRange_Click(object sender, RoutedEventArgs e)
@@ -1827,22 +1819,22 @@ namespace WT_Transfer.Pages
             {
                 DateTime startDate = StartDatePicker.Date.Value.DateTime;
                 DateTime endDate = EndDatePicker.Date.Value.DateTime;
-                FilterPhotosByDateRange(startDate, endDate);
+                FilterVideosByDateRange(startDate, endDate);
             }
         }
 
 
-        private void FilterPhotosByDateRange(DateTime startDate, DateTime endDate)
+        private void FilterVideosByDateRange(DateTime startDate, DateTime endDate)
         {
-            var filteredGroups = new ObservableCollection<GroupInfoList>();
+            var filteredGroups = new ObservableCollection<GroupInfoList_Video>();
 
             foreach (var group in groupedData)
             {
-                var filteredItems = group.Where(photo => DateTime.Parse(photo.Date) >= startDate && DateTime.Parse(photo.Date) <= endDate).ToList();
+                var filteredItems = group.Where(Video => DateTime.Parse(Video.Date) >= startDate && DateTime.Parse(Video.Date) <= endDate).ToList();
 
                 if (filteredItems.Any())
                 {
-                    var newGroup = new GroupInfoList { Key = group.Key };
+                    var newGroup = new GroupInfoList_Video { Key = group.Key };
                     newGroup.AddRange(filteredItems);
                     filteredGroups.Add(newGroup);
                 }
@@ -1854,30 +1846,30 @@ namespace WT_Transfer.Pages
                 Source = filteredGroups
             };
 
-            PhotoGrid.ItemsSource = cvs.View;
+            VideoGrid.ItemsSource = cvs.View;
         }
 
         private void DatePicker_DateChanged(CalendarDatePicker sender, CalendarDatePickerDateChangedEventArgs args)
         {
-            FilterPhotosBySelectedDateRange();
+            FilterVideosBySelectedDateRange();
         }
 
-        private void FilterPhotosBySelectedDateRange()
+        private void FilterVideosBySelectedDateRange()
         {
             if (StartDatePicker.Date.HasValue && EndDatePicker.Date.HasValue)
             {
                 DateTime startDate = StartDatePicker.Date.Value.DateTime;
                 DateTime endDate = EndDatePicker.Date.Value.DateTime;
 
-                var filteredGroups = new ObservableCollection<GroupInfoList>();
+                var filteredGroups = new ObservableCollection<GroupInfoList_Video>();
 
                 foreach (var group in groupedData)
                 {
-                    var filteredItems = group.Where(photo => DateTime.Parse(photo.Date) >= startDate && DateTime.Parse(photo.Date) <= endDate).ToList();
+                    var filteredItems = group.Where(Video => DateTime.Parse(Video.Date) >= startDate && DateTime.Parse(Video.Date) <= endDate).ToList();
 
                     if (filteredItems.Any())
                     {
-                        var newGroup = new GroupInfoList { Key = group.Key };
+                        var newGroup = new GroupInfoList_Video { Key = group.Key };
                         newGroup.AddRange(filteredItems);
                         filteredGroups.Add(newGroup);
                     }
@@ -1889,21 +1881,21 @@ namespace WT_Transfer.Pages
                     Source = filteredGroups
                 };
 
-                PhotoGrid.ItemsSource = cvs.View;
+                VideoGrid.ItemsSource = cvs.View;
             }
         }
 
         //导出所有图片
-        private void ExportAllPhotos_Click(object sender, RoutedEventArgs e)
+        private void ExportAllVideos_Click(object sender, RoutedEventArgs e)
         {
             // 处理导出所有图片的逻辑
-            ExportPhotos(allPhotos: true);
+            ExportVideos(allVideos: true);
         }
 
-        private void ExportSelectedPhotos_Click(object sender, RoutedEventArgs e)
+        private void ExportSelectedVideos_Click(object sender, RoutedEventArgs e)
         {
             // 处理导出选中图片的逻辑
-            ExportPhotos(allPhotos: false);
+            ExportVideos(allVideos: false);
         }
 
         private async Task ShowMessageDialog(string title, string content)
@@ -1919,26 +1911,26 @@ namespace WT_Transfer.Pages
             await messageDialog.ShowAsync();
         }
 
-        private async void ExportPhotos(bool allPhotos)
+        private async void ExportVideos(bool allVideos)
         {
             try
             {
-                List<PhotoInfo> photosToExport;
+                List<VideoInfo> VideosToExport;
 
-                if (allPhotos)
+                if (allVideos)
                 {
                     // 导出所有图片的逻辑
-                    photosToExport = Photos;
+                    VideosToExport = Videos;
                 }
                 else
                 {
                     // 导出选中图片的逻辑
-                    photosToExport = Photos.Where(photo => photo.IsSelected).ToList();
+                    VideosToExport = Videos.Where(Video => Video.IsSelected).ToList();
 
                     // 如果没有选择照片，提示用户
-                    if (photosToExport.Count == 0)
+                    if (VideosToExport.Count == 0)
                     {
-                        await ShowMessageDialog("No photo selected", "No photos have been selected for export.\r\nPlease select the photos you want to export and try again.");
+                        await ShowMessageDialog("No Video selected", "No videos have been selected for export.\r\nPlease select the videos you want to export and try again.");
                         return;
                     }
                 }
@@ -1955,7 +1947,7 @@ namespace WT_Transfer.Pages
                     // 创建并显示ContentDialog
                     var progressDialog = new ContentDialog
                     {
-                        Title = "Exporting Photos",
+                        Title = "Exporting Videos",
                         Content = new StackPanel
                         {
                             Children =
@@ -1988,18 +1980,18 @@ namespace WT_Transfer.Pages
 
                     await Task.Run(() =>
                     {
-                        int totalPhotos = photosToExport.Count;
-                        int exportedPhotos = 0;
+                        int totalVideos = VideosToExport.Count;
+                        int exportedVideos = 0;
 
-                        foreach (var photo in photosToExport)
+                        foreach (var Video in VideosToExport)
                         {
-                            string path = photo.Path;
+                            string path = Video.Path;
                             string localPath = storageFolder.Path;
 
                             adbHelper.saveFromPath(path, localPath);
 
-                            exportedPhotos++;
-                            double progress = (double)exportedPhotos / totalPhotos * 100;
+                            exportedVideos++;
+                            double progress = (double)exportedVideos / totalVideos * 100;
 
                             DispatcherQueue.TryEnqueue(() =>
                             {
@@ -2015,12 +2007,14 @@ namespace WT_Transfer.Pages
                     ContentDialog exportDialog = new ContentDialog
                     {
                         Title = "Info",
-                        Content = "Your photos has been successfully exported to the designated folder.",
+                        Content = "Your videos has been successfully exported to the designated folder.",
                         PrimaryButtonText = "View Folder",
                         SecondaryButtonText = "OK",
                         DefaultButton = ContentDialogButton.Secondary // 设置OK为默认按钮
                     };
                     exportDialog.XamlRoot = this.Content.XamlRoot;
+
+
                     exportDialog.PrimaryButtonClick += async (s, args) =>
                     {
                         await Windows.System.Launcher.LaunchFolderPathAsync(storageFolder.Path);
@@ -2036,21 +2030,21 @@ namespace WT_Transfer.Pages
             }
         }
 
-        private async void DeleteSelectedPhotosButton_Click(object sender, RoutedEventArgs e)
+        private async void DeleteSelectedVideosButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 // 检查当前模块
-                if (currentModule.Equals("photo"))
+                if (currentModule.Equals("video"))
                 {
-                    var selectedPhotos = PhotoGrid.SelectedItems.Cast<PhotoInfo>().ToList();
-                    if (selectedPhotos.Any())
+                    var selectedVideos = VideoGrid.SelectedItems.Cast<VideoInfo>().ToList();
+                    if (selectedVideos.Any())
                     {
                         // 询问用户确认删除操作
                         ContentDialog deleteDialog = new ContentDialog
                         {
-                            Title = "Delete Photos",
-                            Content = "Are you sure you want to delete the selected photo(s)? This action cannot be undone.",
+                            Title = "Delete Videos",
+                            Content = "Are you sure you want to delete the selected Videos?",
                             PrimaryButtonText = "Delete",
                             SecondaryButtonText = "Cancel"
                         };
@@ -2061,17 +2055,17 @@ namespace WT_Transfer.Pages
                         {
                             await Task.Run(() =>
                             {
-                                foreach (var photo in selectedPhotos)
+                                foreach (var Video in selectedVideos)
                                 {
-                                    string path = photo.Path;
+                                    string path = Video.Path;
                                     adbHelper.cmdExecuteWithAdbExit("shell rm " + path);
 
                                     DispatcherQueue.TryEnqueue(() =>
                                     {
-                                        var group = groupedData.FirstOrDefault(g => g.Contains(photo));
+                                        var group = groupedData.FirstOrDefault(g => g.Contains(Video));
                                         if (group != null)
                                         {
-                                            group.Remove(photo);
+                                            group.Remove(Video);
                                             if (group.Count == 0)
                                             {
                                                 groupedData.Remove(group);
@@ -2079,7 +2073,7 @@ namespace WT_Transfer.Pages
                                         }
 
                                         // 更新相应的 AlbumInfo
-                                        var album = albumList.FirstOrDefault(a => a.Name == photo.Bucket);
+                                        var album = albumList.FirstOrDefault(a => a.Name == Video.Bucket);
                                         if (album != null)
                                         {
                                             album.PhotoCount--;
@@ -2099,7 +2093,7 @@ namespace WT_Transfer.Pages
                             request.operation = "delete";
                             request.info = new Data
                             {
-                                paths = selectedPhotos.Select(file => file.Path).ToList<string>(),
+                                paths = selectedVideos.Select(file => file.Path).ToList<string>(),
                             };
 
                             string requestStr = JsonConvert.SerializeObject(request);
@@ -2114,7 +2108,7 @@ namespace WT_Transfer.Pages
                             ContentDialog successDialog = new ContentDialog
                             {
                                 Title = "Success",
-                                Content = "The selected photos have been successfully deleted.",
+                                Content = "Selected Videos deleted successfully.",
                                 PrimaryButtonText = "OK"
                             };
                             successDialog.XamlRoot = this.Content.XamlRoot;
@@ -2126,7 +2120,7 @@ namespace WT_Transfer.Pages
                                 IsSourceGrouped = true,
                                 Source = groupedData
                             };
-                            PhotoGrid.ItemsSource = cvs.View;
+                            VideoGrid.ItemsSource = cvs.View;
                         }
                     }
                     else
@@ -2134,7 +2128,7 @@ namespace WT_Transfer.Pages
                         ContentDialog errorDialog = new ContentDialog
                         {
                             Title = "Error",
-                            Content = "Please select photos to delete.",
+                            Content = "Please select Videos to delete.",
                             PrimaryButtonText = "OK"
                         };
                         errorDialog.XamlRoot = this.Content.XamlRoot;
@@ -2158,7 +2152,7 @@ namespace WT_Transfer.Pages
                 {
                     // 显示加载进度条
                     BucketGrid.Visibility = Visibility.Collapsed;
-                    PhotoGrid.Visibility = Visibility.Collapsed;
+                    VideoGrid.Visibility = Visibility.Collapsed;
                     progressRing.Visibility = Visibility.Visible;
                 });
 
@@ -2188,54 +2182,46 @@ namespace WT_Transfer.Pages
                 // 更新UI
                 if (currentModule == "bucket")
                 {
-                    DispatcherQueue.TryEnqueue(async () =>
+                    DispatcherQueue.TryEnqueue(() =>
                     {
                         try
                         {
-                            await Init();
+                            List<AlbumInfo> albumInfos = albumList;
+                            albumInfos = AddAlbumList();
+                            BucketGrid.ItemsSource = albumInfos;
+                            BucketGrid.Visibility = Visibility.Visible;
                         }
                         catch (Exception ex)
                         {
                             show_error("Error updating UI: " + ex.Message);
                             logHelper.Info(logger, ex.ToString());
                         }
-                        finally
-                        {
-                            // 隐藏加载进度条
-                            DispatcherQueue.TryEnqueue(() =>
-                            {
-                                progressRing.Visibility = Visibility.Collapsed;
-                            });
-                        }
                     });
+
                 }
-                else if (currentModule == "photo")
+                else if (currentModule == "Video")
                 {
                     DispatcherQueue.TryEnqueue(() =>
                     {
                         try
                         {
-                            UpdatePhotoGrid(currentBucket);
-                            PhotoGrid.Visibility = Visibility.Visible;
+                            UpdateVideoGrid(currentBucket);
+                            VideoGrid.Visibility = Visibility.Visible;
                         }
                         catch (Exception ex)
                         {
                             show_error("Error updating UI: " + ex.Message);
                             logHelper.Info(logger, ex.ToString());
                         }
-                        finally
-                        {
-                            // 隐藏加载进度条
-                            DispatcherQueue.TryEnqueue(() =>
-                            {
-                                progressRing.Visibility = Visibility.Collapsed;
-                            });
-                        }
+
                     });
                 }
 
-                **/
-
+                // 隐藏加载进度条
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    progressRing.Visibility = Visibility.Collapsed;
+                });**/
             }
             catch (Exception ex)
             {
@@ -2246,84 +2232,97 @@ namespace WT_Transfer.Pages
         }
 
         //双击显示原图
-        private async void PhotoGrid_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        private async void VideoGrid_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
             try
             {
-                // 获取双击的项
                 var gridView = sender as GridView;
-                var clickedItem = (e.OriginalSource as FrameworkElement)?.DataContext as PhotoInfo;
+                var clickedItem = (e.OriginalSource as FrameworkElement)?.DataContext as VideoInfo;
 
                 if (clickedItem != null)
                 {
+                    string localPath = 
+                        System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./video/temp.mp4"));
+                    string extension = System.IO.Path.GetExtension(localPath)?.ToLower();
 
+                    adbHelper.saveFromPath(clickedItem.Path, localPath);
 
-                    string localPath = (string)ApplicationData.Current.LocalSettings.Values[MainWindow.Setting_PhotoBackupPath];
-                    string winPath = localPath + "\\image" + "\\original\\" + clickedItem.DisplayName;
-
-
-                    // 检查照片是否存在
-                    if (!File.Exists(winPath))
+                    // 检查文件是否存在
+                    if (File.Exists(localPath))
                     {
-                        // 获取照片路径
-                        string path = clickedItem.Path;
+                        if (extension == ".mp4" || extension == ".avi" || extension == ".mkv" || extension == ".mov")
+                        {
+                            // 创建一个新的窗口
+                            var videoWindow = new Window
+                            {
+                                Title = "Video Preview",
+                            };
 
-                        adbHelper.saveFromPath(path, winPath);
+                            // 创建 MediaPlayerElement
+                            var mediaPlayerElement = new MediaPlayerElement
+                            {
+                                AutoPlay = true,
+                                AreTransportControlsEnabled = true,
+                                Source = MediaSource.CreateFromUri(new Uri(localPath)),
+                                Stretch = Stretch.Uniform
+                            };
+
+                            // 将 MediaPlayerElement 添加到窗口
+                            videoWindow.Content = mediaPlayerElement;
+
+
+                            // 延迟激活窗口
+                            videoWindow.DispatcherQueue.TryEnqueue(() =>
+                            {
+                                videoWindow.Activate();
+                            });
+
+
+                        }
+                        else
+                        {
+                            show_error("Unsupported file format.");
+                        }
                     }
-
-                    // 显示照片
-                    ShowPhoto.XamlRoot = this.XamlRoot;
-                    BitmapImage imageSource = new BitmapImage(new Uri(winPath));
-                    photoImage.Source = imageSource;
-                    await ShowPhoto.ShowAsync();
                 }
             }
             catch (Exception ex)
             {
-                show_error(ex.ToString());
+                show_error("Error updating UI: " + ex.Message);
                 logHelper.Info(logger, ex.ToString());
-                throw;
             }
         }
-
     }
 
-    public class AlbumInfo
-    {
-        public string Name { get; set; }
-        public string FirstPhotoPath { get; set; }
-        public int PhotoCount { get; set; }
-    }
-
-    public class GroupInfoList : List<PhotoInfo>, INotifyPropertyChanged
+    public class GroupInfoList_Video : List<VideoInfo>, INotifyPropertyChanged
     {
         public string Key { get; set; }
 
-        public List<PhotoInfo> PhotoInfos { get; set; }
-        public int PhotoCount => this.Count; // 新增属性，返回照片总数
+        public List<VideoInfo> VideoInfos { get; set; }
+        public int VideoCount => this.Count; // 新增属性，返回照片总数
 
         public int SelectedCount => this.Count(item => item.IsSelected);
         public event PropertyChangedEventHandler PropertyChanged;
 
 
-        public GroupInfoList()
+        public GroupInfoList_Video()
         {
-            PhotoInfos = new List<PhotoInfo>();
+            VideoInfos = new List<VideoInfo>();
         }
-        public void AddRange(IEnumerable<PhotoInfo> collection)
+        public void AddRange(IEnumerable<VideoInfo> collection)
         {
             foreach (var item in collection)
             {
                 item.PropertyChanged += Item_PropertyChanged;
                 base.Add(item);
             }
-            OnPropertyChanged(nameof(PhotoCount));
+            OnPropertyChanged(nameof(VideoCount));
             OnPropertyChanged(nameof(SelectedCount));
         }
 
         private void Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(PhotoInfo.IsSelected))
+            if (e.PropertyName == nameof(VideoInfo.IsSelected))
             {
                 OnPropertyChanged(nameof(SelectedCount));
             }
@@ -2336,14 +2335,14 @@ namespace WT_Transfer.Pages
 
         public bool CheckAllSelected()
         {
-            return this.All(photo => photo.IsSelected);
+            return this.All(Video => Video.IsSelected);
         }
 
         public void SetAllSelected(bool selected)
         {
-            foreach (var photo in this)
+            foreach (var Video in this)
             {
-                photo.IsSelected = selected;
+                Video.IsSelected = selected;
             }
         }
     }

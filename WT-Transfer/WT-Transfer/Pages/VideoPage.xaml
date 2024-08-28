@@ -16,6 +16,9 @@
     mc:Ignorable="d">
 
     <Page.Resources>
+
+        <helpers:DateTimeFormatConverter x:Key="DateTimeFormatConverter"/>
+
         <helpers:CountToStringConverter x:Key="ItemCountConverter" />
 
         <MenuFlyout x:Key="SortFlyout">
@@ -110,7 +113,7 @@
                     <Image
                         Width="150"
                         Height="150"
-                        Source="{Binding FirstVideoPath}"
+                        Source="{Binding FirstPhotoPath}"
                         Stretch="UniformToFill" />
                 </Border>
 
@@ -146,7 +149,7 @@
                     Height="30"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Bottom"
-                    Text="{Binding Title}"
+                    Text="{Binding Date, Converter={StaticResource DateTimeFormatConverter}}"
                     TextAlignment="Center" />
             </StackPanel>
         </DataTemplate>
@@ -455,6 +458,8 @@
             Unable to successfully read data from the phone.
         </TextBlock>
 
+        
+        <!-- Ö÷ÒªÄÚÈÝ-->
         <ScrollViewer Grid.Row="1" Margin="37,0,20,0">
             <StackPanel Orientation="Vertical">
 
@@ -476,6 +481,7 @@
                     IsItemClickEnabled="True"
                     ItemClick="VideoGrid_ItemClick"
                     ItemTemplate="{StaticResource ImageTemplate}"
+                    DoubleTapped="VideoGrid_DoubleTapped"
                     ItemsSource="{Binding Source={StaticResource cvs}}"
                     SelectionMode="Multiple"
                     Visibility="Collapsed">
@@ -506,13 +512,13 @@
             <TextBlock x:Name="SyncMessage" />
         </ContentDialog>
 
-        <!--  Ë«»÷Í¼Æ¬µ¯´°  -->
-        <ContentDialog
-            x:Name="ShowVideo"
-            Title="Video"
-            Background="#F0F3F9"
-            PrimaryButtonText="OK">
-            <Image x:Name="VideoImage" />
-        </ContentDialog>
+        <!--  Ë«»÷ÊÓÆµµ¯´°  -->
+        <MediaPlayerElement x:Name="videoPlayerElement"
+                    AutoPlay="False"
+                    AreTransportControlsEnabled="True"
+                    Visibility="Collapsed"
+                    Width="800"
+                    Height="450" />
+
     </Grid>
 </Page>

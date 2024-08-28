@@ -75,6 +75,9 @@ namespace WT_Transfer.Pages
         //当前目录
         private string currentDirectory = "/Pictures/";
 
+        // 创建一个集合用于存放没有缩略图的照片
+        List<PhotoInfo> photosWithoutThumbnail = new List<PhotoInfo>();
+
         // 构造函数
         public PhotoPage()
         {
@@ -198,6 +201,7 @@ namespace WT_Transfer.Pages
                             // 解析数据
                             JArray jArray = JArray.Parse(str);
                             // 使用 LINQ 查询获取 DisplayName 和 MobileNum
+                            //{"bucket":"WeiXin","date":"2023-11-09 10:15:51","displayName":"mmexport1699496151800.jpg","path":"/storage/emulated/0/Pictures/WeiXin/mmexport1699496151800.jpg","size":2933299}
                             var resultArray = (from item in jArray
                                                let extension = System.IO.Path.GetExtension(item["path"]?.ToString()).ToLower()
                                                where extension == ".jpg" || extension == ".jpeg" || extension == ".png" || extension == ".bmp" || extension == ".gif" || extension == ".tiff"
@@ -207,6 +211,7 @@ namespace WT_Transfer.Pages
                                                    Date = item["date"]?.ToString(),
                                                    Path = item["path"]?.ToString(),
                                                    Size = item["size"]?.ToString(),
+                                                   displayName = item["displayName"]?.ToString(),
                                                })
                             .ToArray();
 
@@ -229,6 +234,7 @@ namespace WT_Transfer.Pages
                                 photoInfo.Bucket = item.Bucket;
                                 photoInfo.Date = item.Date;
                                 photoInfo.Path = item.Path;
+                                photoInfo.DisplayName = item.displayName;
 
                                 // 将大小从字节转换为MB
                                 if (double.TryParse(item.Size, out double sizeInBytes))
@@ -274,7 +280,7 @@ namespace WT_Transfer.Pages
                             MainWindow.PhotosInBucket = PhotosInBucket;
 
                             //异步线程将缩率图传输到电脑端
-                            Task.Run(() =>
+                            await Task.Run(() =>
                             {
                                 string phonePath =
                         "/storage/emulated/0/Android/data/com.example.contacts/files/Download/pic";
@@ -282,20 +288,65 @@ namespace WT_Transfer.Pages
                                 string localPath =
                                     System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./images"));
 
-                                adbHelper.savePathFromPath(phonePath, localPath);
+                                // 判断目录是否存在
+                                if (!System.IO.Directory.Exists(localPath))
+                                {
+                                    // 如果目录不存在，则创建目录
+                                    System.IO.Directory.CreateDirectory(localPath);
+                                }
+
+                                string picPath = System.IO.Path.Combine(localPath, "./pic");
+
+                                // 获取本地路径下所有文件的数量
+                                int fileCount = System.IO.Directory.GetFiles(picPath, "*.jpg").Length;
+
+                                // 如果文件数量不为0，则跳过传输
+                                if (fileCount != 0)
+                                {
+                                    logger.Info("本地文件夹不为空，跳过传输。");
+                                }
+                                else
+                                {
+                                    logger.Info("文件夹下缩率图数量为0，开始传输缩率图...");
+                                    adbHelper.savePathFromPath(phonePath, localPath);
+                                }
                             });
-                            int count = 0;
+
+                            photosWithoutThumbnail = new List<PhotoInfo>();
+                            // 设置缩略图展示路径
                             foreach (var photo in Photos)
                             {
-                                // 设置缩略图路径
                                 string localPath =
-                                    System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./images/pic/" + count++ + ".jpg")); ;
+                                    System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./images/pic/" + photo.DisplayName + ".jpg")); ;
 
-                                photo.LocalPath = localPath;
+                                // 判断目录是否存在
+                                if (!System.IO.Directory.Exists(localPath))
+                                {
+                                    // 如果目录不存在，则创建目录
+                                    System.IO.Directory.CreateDirectory(localPath);
+                                }
+
+                                // 确保在 UI 线程中设置 LocalPath
+                                DispatcherQueue.TryEnqueue(() =>
+                                {
+                                    photo.LocalPath = localPath;
+
+                                    // 判断文件是否存在，如果不存在则将 photo 加入集合
+                                    if (!System.IO.File.Exists(localPath))
+                                    {
+                                        photosWithoutThumbnail.Add(photo);
+                                    }
+                                });
+
                             }
 
+                            // 发送给手机生成
+                            await generateThumbil(helper, adbHelper);
 
+
+                            // 初始化目录 AlbumList
                             AddAlbumList();
+
                             // 更新界面
                             DispatcherQueue.TryEnqueue(() =>
                             {
@@ -337,6 +388,48 @@ namespace WT_Transfer.Pages
                 show_error(ex.ToString());
                 logHelper.Info(logger, ex.ToString());
                 throw;
+            }
+
+            async Task generateThumbil(SocketHelper helper, AdbHelper adbHelper)
+            {
+                // 创建一个集合的副本以避免在遍历时修改原集合
+                var photosToProcess = new List<PhotoInfo>(photosWithoutThumbnail);
+
+                foreach (PhotoInfo photo in photosToProcess)
+                {
+                    if(String.IsNullOrEmpty(photo.Path))
+                    {
+                        continue;
+                    }
+                    Request request = new Request();
+                    request.command_id = DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString();
+                    request.module = "picture";
+                    request.operation = "generate";
+                    request.info = new Data
+                    {
+                        path = photo.Path,
+                    };
+
+                    string requestStr = JsonConvert.SerializeObject(request);
+                    Result result2 = new Result();
+                    await Task.Run(() =>
+                    {
+                        result2 = helper.ExecuteOp(requestStr);
+                    });
+
+
+                    if (result2.status.Equals("00"))
+                    {
+                        string localPath =
+                                System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./images/pic/" + photo.DisplayName + ".jpg")); ;
+
+                        string phonePath =
+    "/storage/emulated/0/Android/data/com.example.contacts/files/Download/pic/" + photo.DisplayName + ".jpg";
+                        adbHelper.saveFromPath(phonePath, localPath);
+
+                        logger.Info("将一个缩率图加入到文件夹中：" + photo.DisplayName);
+                    }
+                }
             }
         }
 
@@ -1614,10 +1707,12 @@ namespace WT_Transfer.Pages
         }
 
 
-        private void UpdatePhotoGrid(string directoryName)
+        private async void UpdatePhotoGrid(string directoryName)
         {
             if (currentModule == "photo" && PhotosInBucket.TryGetValue(directoryName, out var photosInDirectory))
             {
+                await Init(); 
+
                 var groupedData = new ObservableCollection<GroupInfoList>();
 
                 var groupedPhotos = photosInDirectory
@@ -1926,7 +2021,7 @@ namespace WT_Transfer.Pages
                         DefaultButton = ContentDialogButton.Secondary // 设置OK为默认按钮
                     };
                     exportDialog.XamlRoot = this.Content.XamlRoot;
-                    exportDialog.SecondaryButtonClick += async (s, args) =>
+                    exportDialog.PrimaryButtonClick += async (s, args) =>
                     {
                         await Windows.System.Launcher.LaunchFolderPathAsync(storageFolder.Path);
                     };
@@ -2067,27 +2162,52 @@ namespace WT_Transfer.Pages
                     progressRing.Visibility = Visibility.Visible;
                 });
 
+                DispatcherQueue.TryEnqueue(async () =>
+                {
+                    try
+                    {
+                        await Init();
+                    }
+                    catch (Exception ex)
+                    {
+                        show_error("Error updating UI: " + ex.Message);
+                        logHelper.Info(logger, ex.ToString());
+                    }
+                    finally
+                    {
+                        // 隐藏加载进度条
+                        DispatcherQueue.TryEnqueue(() =>
+                        {
+                            progressRing.Visibility = Visibility.Collapsed;
+                            BucketGrid.Visibility = Visibility.Visible;
+                        });
+                    }
+                });
 
-
+                /**
                 // 更新UI
                 if (currentModule == "bucket")
                 {
-                    DispatcherQueue.TryEnqueue(() =>
+                    DispatcherQueue.TryEnqueue(async () =>
                     {
                         try
                         {
-                            List<AlbumInfo> albumInfos = albumList;
-                            albumInfos = AddAlbumList();
-                            BucketGrid.ItemsSource = albumInfos;
-                            BucketGrid.Visibility = Visibility.Visible;
+                            await Init();
                         }
                         catch (Exception ex)
                         {
                             show_error("Error updating UI: " + ex.Message);
                             logHelper.Info(logger, ex.ToString());
                         }
+                        finally
+                        {
+                            // 隐藏加载进度条
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
+                                progressRing.Visibility = Visibility.Collapsed;
+                            });
+                        }
                     });
-
                 }
                 else if (currentModule == "photo")
                 {
@@ -2103,15 +2223,60 @@ namespace WT_Transfer.Pages
                             show_error("Error updating UI: " + ex.Message);
                             logHelper.Info(logger, ex.ToString());
                         }
-
+                        finally
+                        {
+                            // 隐藏加载进度条
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
+                                progressRing.Visibility = Visibility.Collapsed;
+                            });
+                        }
                     });
                 }
 
-                // 隐藏加载进度条
-                DispatcherQueue.TryEnqueue(() =>
+                **/
+
+            }
+            catch (Exception ex)
+            {
+                show_error(ex.ToString());
+                logHelper.Info(logger, ex.ToString());
+                throw;
+            }
+        }
+
+        //双击显示原图
+        private async void PhotoGrid_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        {
+            try
+            {
+                // 获取双击的项
+                var gridView = sender as GridView;
+                var clickedItem = (e.OriginalSource as FrameworkElement)?.DataContext as PhotoInfo;
+
+                if (clickedItem != null)
                 {
-                    progressRing.Visibility = Visibility.Collapsed;
-                });
+
+
+                    string localPath = (string)ApplicationData.Current.LocalSettings.Values[MainWindow.Setting_PhotoBackupPath];
+                    string winPath = localPath + "\\image" + "\\original\\" + clickedItem.DisplayName;
+
+
+                    // 检查照片是否存在
+                    if (!File.Exists(winPath))
+                    {
+                        // 获取照片路径
+                        string path = clickedItem.Path;
+
+                        adbHelper.saveFromPath(path, winPath);
+                    }
+
+                    // 显示照片
+                    ShowPhoto.XamlRoot = this.XamlRoot;
+                    BitmapImage imageSource = new BitmapImage(new Uri(winPath));
+                    photoImage.Source = imageSource;
+                    await ShowPhoto.ShowAsync();
+                }
             }
             catch (Exception ex)
             {

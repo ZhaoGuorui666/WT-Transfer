@@ -40,6 +40,8 @@ using static WT_Transfer.SocketModels.Request;
 using System.Threading;
 using Microsoft.UI.Xaml.Shapes;
 using System.Diagnostics;
+using Windows.Media.Core;
+using Windows.Media.Playback;
 
 namespace WT_Transfer.Pages
 {
@@ -74,6 +76,9 @@ namespace WT_Transfer.Pages
 
         //当前目录
         private string currentDirectory = "/Pictures/";
+
+        // 创建一个集合用于存放没有缩略图的照片
+        List<VideoInfo> photosWithoutThumbnail = new List<VideoInfo>();
 
         // 构造函数
         public VideoPage()
@@ -207,6 +212,7 @@ namespace WT_Transfer.Pages
                                                    Date = item["date"]?.ToString(),
                                                    Path = item["path"]?.ToString(),
                                                    Size = item["size"]?.ToString(),
+                                                   displayName = item["displayName"]?.ToString(),
                                                })
                             .ToArray();
 
@@ -229,6 +235,7 @@ namespace WT_Transfer.Pages
                                 VideoInfo.Bucket = item.Bucket;
                                 VideoInfo.Date = item.Date;
                                 VideoInfo.Path = item.Path;
+                                VideoInfo.DisplayName = item.displayName;
 
                                 // 将大小从字节转换为MB
                                 if (double.TryParse(item.Size, out double sizeInBytes))
@@ -274,25 +281,71 @@ namespace WT_Transfer.Pages
                             MainWindow.VideosInBucket = VideosInBucket;
 
                             //异步线程将缩率图传输到电脑端
-                            Task.Run(() =>
+                            await Task.Run(() =>
                             {
                                 string phonePath =
                         "/storage/emulated/0/Android/data/com.example.contacts/files/Download/pic";
 
                                 string localPath =
-                                    System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./images"));
+                                    System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./videos"));
 
-                                adbHelper.savePathFromPath(phonePath, localPath);
+                                // 判断目录是否存在
+                                if (!System.IO.Directory.Exists(localPath))
+                                {
+                                    // 如果目录不存在，则创建目录
+                                    System.IO.Directory.CreateDirectory(localPath);
+                                }
+
+                                string picPath = System.IO.Path.Combine(localPath, "./pic");
+
+                                // 判断目录是否存在
+                                if (!System.IO.Directory.Exists(picPath))
+                                {
+                                    // 如果目录不存在，则创建目录
+                                    System.IO.Directory.CreateDirectory(picPath);
+                                }
+
+                                // 获取本地路径下所有文件的数量
+                                int fileCount = System.IO.Directory.GetFiles(picPath, "*.jpg").Length;
+
+                                // 如果文件数量不为0，则跳过传输
+                                if (fileCount != 0)
+                                {
+                                    logger.Info("本地文件夹不为空，跳过传输。");
+                                }
+                                else
+                                {
+                                    logger.Info("文件夹下缩率图数量为0，开始传输缩率图...");
+                                    adbHelper.savePathFromPath(phonePath, localPath);
+                                }
                             });
-                            int count = 0;
-                            foreach (var Video in Videos)
+
+
+                            photosWithoutThumbnail = new List<VideoInfo>();
+                            // 设置缩略图展示路径
+                            foreach (var video in Videos)
                             {
                                 // 设置缩略图路径
                                 string localPath =
-                                    System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./images/pic/" + count++ + ".jpg")); ;
+                                    System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./videos/pic/" + video.DisplayName + ".jpg")); ;
 
-                                Video.LocalPath = localPath;
+                                // 确保在 UI 线程中设置 LocalPath
+                                DispatcherQueue.TryEnqueue(() =>
+                                {
+                                    video.LocalPath = localPath;
+
+                                    // 判断文件是否存在，如果不存在则将 video 加入集合
+                                    if (!System.IO.File.Exists(localPath))
+                                    {
+                                        photosWithoutThumbnail.Add(video);
+                                    }
+                                });
+
                             }
+
+                            // 发送给手机生成
+                            await generateThumbil(helper, adbHelper);
+
 
 
                             AddAlbumList();
@@ -337,6 +390,55 @@ namespace WT_Transfer.Pages
                 show_error(ex.ToString());
                 logHelper.Info(logger, ex.ToString());
                 throw;
+            }
+
+            async Task generateThumbil(SocketHelper helper, AdbHelper adbHelper)
+            {
+                // 创建一个集合的副本以避免在遍历时修改原集合
+                var photosToProcess = new List<VideoInfo>(photosWithoutThumbnail);
+
+                foreach (VideoInfo video in photosToProcess)
+                {
+                    if (String.IsNullOrEmpty(video.Path))
+                    {
+                        continue;
+                    }
+                    Request request = new Request();
+                    request.command_id = DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString();
+                    request.module = "picture";
+                    request.operation = "generate";
+                    request.info = new Data
+                    {
+                        path = video.Path,
+                    };
+
+                    string requestStr = JsonConvert.SerializeObject(request);
+                    Result result2 = new Result();
+                    await Task.Run(() =>
+                    {
+                        result2 = helper.ExecuteOp(requestStr);
+                    });
+
+
+                    if (result2.status.Equals("00"))
+                    {
+                        string localPath =
+                                System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./images/pic/" + video.DisplayName + ".jpg")); ;
+
+                        // 判断目录是否存在
+                        if (!System.IO.Directory.Exists(localPath))
+                        {
+                            // 如果目录不存在，则创建目录
+                            System.IO.Directory.CreateDirectory(localPath);
+                        }
+
+                        string phonePath =
+    "/storage/emulated/0/Android/data/com.example.contacts/files/Download/pic/" + video.DisplayName + ".jpg";
+                        adbHelper.saveFromPath(phonePath, localPath);
+
+                        logger.Info("将一个缩率图加入到文件夹中：" + video.DisplayName);
+                    }
+                }
             }
         }
 
@@ -434,7 +536,7 @@ namespace WT_Transfer.Pages
                             //VideosInBucket[bucket] = Videos;
 
                             // 更新当前模块和分页信息
-                            currentModule = "Video";
+                            currentModule = "video";
 
                             DispatcherQueue.TryEnqueue(() =>
                             {
@@ -469,14 +571,29 @@ namespace WT_Transfer.Pages
                                         }
                                     }
                                 }
+
+                                // 设置缩略图展示路径
+                                foreach (var videos in groupedData)
+                                {
+                                    foreach (var video in videos)
+                                    {
+                                        // 设置缩略图路径
+                                        string localPath =
+                                            System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./videos/pic/" + video.DisplayName + ".jpg")); ;
+
+                                        video.LocalPath = localPath;
+                                    }
+                                }
+
+                                var cvs = new CollectionViewSource
+                                {
+                                    IsSourceGrouped = true,
+                                    Source = groupedData
+                                };
+                                VideoGrid.ItemsSource = cvs.View;
                             });
 
-                            var cvs = new CollectionViewSource
-                            {
-                                IsSourceGrouped = true,
-                                Source = groupedData
-                            };
-                            VideoGrid.ItemsSource = cvs.View;
+
                         }
                         else
                         {
@@ -633,7 +750,7 @@ namespace WT_Transfer.Pages
             try
             {
                 VideoInfo selectedItem = new VideoInfo();
-                if (currentModule.Equals("Video"))
+                if (currentModule.Equals("video"))
                     selectedItem = (VideoInfo)VideoGrid.SelectedItem;
                 else
                     selectedItem = null;
@@ -849,7 +966,7 @@ namespace WT_Transfer.Pages
             try
             {
                 VideoInfo selectedItem = new VideoInfo();
-                if (currentModule.Equals("Video"))
+                if (currentModule.Equals("video"))
                     selectedItem = (VideoInfo)VideoGrid.SelectedItem;
                 else
                     selectedItem = null;
@@ -897,12 +1014,12 @@ namespace WT_Transfer.Pages
             try
             {
                 VideoInfo selectedItem = new VideoInfo();
-                if (currentModule.Equals("Video"))
+                if (currentModule.Equals("video"))
                     selectedItem = (VideoInfo)VideoGrid.SelectedItem;
                 else
                     selectedItem = null;
 
-                if ((selectedItem == null && currentModule.Equals("Video"))
+                if ((selectedItem == null && currentModule.Equals("video"))
                     || (BucketGrid.SelectedItem == null && currentModule.Equals("bucket")))
                 {
                     ContentDialog a = new ContentDialog
@@ -973,7 +1090,7 @@ namespace WT_Transfer.Pages
                         if (result.status.Equals("00"))
                         {
                             // 删除文件
-                            if (currentModule.Equals("Video"))
+                            if (currentModule.Equals("video"))
                             {
                                 List<VideoInfo> VideoInfos = VideosInBucket[currentBucket];
                                 VideoInfos.Remove(selectedItem);
@@ -1084,7 +1201,7 @@ namespace WT_Transfer.Pages
                         await errorDialog.ShowAsync();
                     }
                 }
-                else if (currentModule.Equals("Video"))
+                else if (currentModule.Equals("video"))
                 {
                     // 删除选中的图片
                     if (VideoGrid.SelectedItem != null)
@@ -1205,40 +1322,6 @@ namespace WT_Transfer.Pages
             ThisYear.IsChecked = false;
             CustomRange.IsChecked = false;
         }
-
-        // 双击图片的事件处理方法
-        private async void StackPanel_DoubleTapped_1(object sender, DoubleTappedRoutedEventArgs e)
-        {
-            try
-            {
-                StackPanel stackPanel = sender as StackPanel;
-                foreach (var child in stackPanel.Children)
-                {
-                    // 检查子元素是否为 TextBlock 类型
-                    if (child is TextBlock textBlock)
-                    {
-                        // 获取照片路径
-                        string path = textBlock.Tag.ToString();
-                        string localPath = (string)ApplicationData.Current.LocalSettings.Values[MainWindow.Setting_VideoBackupPath];
-                        string winPath = localPath + "\\image" + "\\" + textBlock.Text;
-
-                        adbHelper.saveFromPath(path, winPath);
-
-                        ShowVideo.XamlRoot = this.XamlRoot;
-                        BitmapImage imageSource = new BitmapImage(new Uri(winPath));
-                        VideoImage.Source = imageSource;
-                        await ShowVideo.ShowAsync();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                show_error(ex.ToString());
-                logHelper.Info(logger, ex.ToString());
-                throw;
-            }
-        }
-
         // 显示错误信息对话框
         private async void show_error(string msg)
         {
@@ -1616,10 +1699,12 @@ namespace WT_Transfer.Pages
         }
 
 
-        private void UpdateVideoGrid(string directoryName)
+        private async void UpdateVideoGrid(string directoryName)
         {
-            if (currentModule == "Video" && VideosInBucket.TryGetValue(directoryName, out var VideosInDirectory))
+            if (currentModule == "video" && VideosInBucket.TryGetValue(directoryName, out var VideosInDirectory))
             {
+                await Init();
+
                 var groupedData = new ObservableCollection<GroupInfoList_Video>();
 
                 var groupedVideos = VideosInDirectory
@@ -1930,7 +2015,7 @@ namespace WT_Transfer.Pages
                     exportDialog.XamlRoot = this.Content.XamlRoot;
 
 
-                    exportDialog.SecondaryButtonClick += async (s, args) =>
+                    exportDialog.PrimaryButtonClick += async (s, args) =>
                     {
                         await Windows.System.Launcher.LaunchFolderPathAsync(storageFolder.Path);
                     };
@@ -1950,7 +2035,7 @@ namespace WT_Transfer.Pages
             try
             {
                 // 检查当前模块
-                if (currentModule.Equals("Video"))
+                if (currentModule.Equals("video"))
                 {
                     var selectedVideos = VideoGrid.SelectedItems.Cast<VideoInfo>().ToList();
                     if (selectedVideos.Any())
@@ -2071,8 +2156,29 @@ namespace WT_Transfer.Pages
                     progressRing.Visibility = Visibility.Visible;
                 });
 
+                DispatcherQueue.TryEnqueue(async () =>
+                {
+                    try
+                    {
+                        await Init();
+                    }
+                    catch (Exception ex)
+                    {
+                        show_error("Error updating UI: " + ex.Message);
+                        logHelper.Info(logger, ex.ToString());
+                    }
+                    finally
+                    {
+                        // 隐藏加载进度条
+                        DispatcherQueue.TryEnqueue(() =>
+                        {
+                            progressRing.Visibility = Visibility.Collapsed;
+                            BucketGrid.Visibility = Visibility.Visible;
+                        });
+                    }
+                });
 
-
+                /**
                 // 更新UI
                 if (currentModule == "bucket")
                 {
@@ -2115,7 +2221,7 @@ namespace WT_Transfer.Pages
                 DispatcherQueue.TryEnqueue(() =>
                 {
                     progressRing.Visibility = Visibility.Collapsed;
-                });
+                });**/
             }
             catch (Exception ex)
             {
@@ -2125,8 +2231,68 @@ namespace WT_Transfer.Pages
             }
         }
 
-    }
+        //双击显示原图
+        private async void VideoGrid_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        {
+            try
+            {
+                var gridView = sender as GridView;
+                var clickedItem = (e.OriginalSource as FrameworkElement)?.DataContext as VideoInfo;
 
+                if (clickedItem != null)
+                {
+                    string localPath = 
+                        System.IO.Path.GetFullPath(System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, "./video/temp.mp4"));
+                    string extension = System.IO.Path.GetExtension(localPath)?.ToLower();
+
+                    adbHelper.saveFromPath(clickedItem.Path, localPath);
+
+                    // 检查文件是否存在
+                    if (File.Exists(localPath))
+                    {
+                        if (extension == ".mp4" || extension == ".avi" || extension == ".mkv" || extension == ".mov")
+                        {
+                            // 创建一个新的窗口
+                            var videoWindow = new Window
+                            {
+                                Title = "Video Preview",
+                            };
+
+                            // 创建 MediaPlayerElement
+                            var mediaPlayerElement = new MediaPlayerElement
+                            {
+                                AutoPlay = true,
+                                AreTransportControlsEnabled = true,
+                                Source = MediaSource.CreateFromUri(new Uri(localPath)),
+                                Stretch = Stretch.Uniform
+                            };
+
+                            // 将 MediaPlayerElement 添加到窗口
+                            videoWindow.Content = mediaPlayerElement;
+
+
+                            // 延迟激活窗口
+                            videoWindow.DispatcherQueue.TryEnqueue(() =>
+                            {
+                                videoWindow.Activate();
+                            });
+
+
+                        }
+                        else
+                        {
+                            show_error("Unsupported file format.");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                show_error("Error updating UI: " + ex.Message);
+                logHelper.Info(logger, ex.ToString());
+            }
+        }
+    }
 
     public class GroupInfoList_Video : List<VideoInfo>, INotifyPropertyChanged
     {

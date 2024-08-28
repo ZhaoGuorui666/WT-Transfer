@@ -16,6 +16,9 @@
     mc:Ignorable="d">
 
     <Page.Resources>
+
+        <helpers:DateTimeFormatConverter x:Key="DateTimeFormatConverter"/>
+        
         <helpers:CountToStringConverter x:Key="ItemCountConverter" />
 
         <MenuFlyout x:Key="SortFlyout">
@@ -146,7 +149,7 @@
                     Height="30"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Bottom"
-                    Text="{Binding Title}"
+                    Text="{Binding Date, Converter={StaticResource DateTimeFormatConverter}}"
                     TextAlignment="Center" />
             </StackPanel>
         </DataTemplate>
@@ -455,6 +458,8 @@
             Unable to successfully read data from the phone.
         </TextBlock>
 
+        
+        <!-- 主要内容 -->
         <ScrollViewer Grid.Row="1" Margin="37,0,20,0">
             <StackPanel Orientation="Vertical">
 
@@ -478,6 +483,7 @@
                     ItemTemplate="{StaticResource ImageTemplate}"
                     ItemsSource="{Binding Source={StaticResource cvs}}"
                     SelectionMode="Multiple"
+                    DoubleTapped="PhotoGrid_DoubleTapped"
                     Visibility="Collapsed">
                     <GridView.GroupStyle>
                         <GroupStyle HeaderTemplate="{StaticResource GroupHeaderTemplate}" />

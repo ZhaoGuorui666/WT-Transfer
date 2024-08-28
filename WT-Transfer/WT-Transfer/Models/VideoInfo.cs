@@ -15,6 +15,7 @@ namespace WT_Transfer.Models
         public string Path { get; set; }
         public string Title { get; set; }
         public string Size { get; set; }
+        public string DisplayName { get; set; }
         private string localPath;
         public string LocalPath
         {
